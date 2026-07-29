@@ -1,0 +1,27 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: eureka-server
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    # A Eureka server should not register with itself (unless in a peer-aware / HA setup).
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    # Disable self-preservation for local development.
+    # Keep this enabled in production to prevent loss of registrations due to network partitions.
+    enable-self-preservation: false
+    # How often (in ms) eviction tasks should run.
+    eviction-interval-timer-in-ms: 5000
+
+logging:
+  level:
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO
