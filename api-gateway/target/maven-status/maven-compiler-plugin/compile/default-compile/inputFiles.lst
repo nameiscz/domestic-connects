@@ -1,0 +1,4 @@
+/Users/nika/Project/domestic-connects/api-gateway/src/main/java/com/domesticconnects/gateway/config/CorsConfig.java
+/Users/nika/Project/domestic-connects/api-gateway/src/main/java/com/domesticconnects/gateway/config/GatewayConfig.java
+/Users/nika/Project/domestic-connects/api-gateway/src/main/java/com/domesticconnects/gateway/filter/JwtAuthGlobalFilter.java
+/Users/nika/Project/domestic-connects/api-gateway/src/main/java/com/domesticconnects/gateway/ApiGatewayApplication.java

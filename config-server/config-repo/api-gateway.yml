@@ -1,0 +1,126 @@
+# Centralised configuration for api-gateway
+# Served by config-server on port 8888.
+
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      # ------------------------------------------------------------------
+      # Route definitions — all use lb:// (load-balanced via Eureka)
+      # ------------------------------------------------------------------
+      routes:
+        # ---- Auth ----
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+
+        # ---- Jobs ----
+        - id: job-service
+          uri: lb://job-service
+          predicates:
+            - Path=/api/jobs/**
+          filters:
+            - StripPrefix=1
+
+        # ---- Attendance ----
+        - id: attendance-service
+          uri: lb://attendance-service
+          predicates:
+            - Path=/api/attendance/**
+          filters:
+            - StripPrefix=1
+
+        # ---- Payroll ----
+        - id: payroll-service
+          uri: lb://payroll-service
+          predicates:
+            - Path=/api/payroll/**
+          filters:
+            - StripPrefix=1
+
+        # ---- Performance ----
+        - id: performance-service
+          uri: lb://performance-service
+          predicates:
+            - Path=/api/performance/**
+          filters:
+            - StripPrefix=1
+
+        # ---- Admin ----
+        - id: admin-service
+          uri: lb://admin-service
+          predicates:
+            - Path=/api/admin/**
+          filters:
+            - StripPrefix=1
+
+        # ---- Notification ----
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - StripPrefix=1
+
+      # ------------------------------------------------------------------
+      # Global CORS configuration for React frontend on localhost:3000
+      # ------------------------------------------------------------------
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins:
+              - "http://localhost:3000"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowed-headers:
+              - Authorization
+              - Content-Type
+              - X-Requested-With
+              - Accept
+              - Origin
+              - X-Client-ID
+            exposed-headers:
+              - Authorization
+              - X-Total-Count
+            allow-credentials: true
+            max-age: 3600
+
+# --------------------------------------------------------------------------
+# Eureka Client — register with the discovery server
+# --------------------------------------------------------------------------
+eureka:
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+# --------------------------------------------------------------------------
+# JWT Configuration (shared secret — must match auth-service)
+# --------------------------------------------------------------------------
+jwt:
+  secret: ${JWT_SECRET:change-me-in-production}
+  expiration-ms: 86400000
+
+# --------------------------------------------------------------------------
+# Logging
+# --------------------------------------------------------------------------
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.domesticconnects.gateway: DEBUG
+    com.netflix.discovery: INFO
