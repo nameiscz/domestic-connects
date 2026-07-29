@@ -1,0 +1,4 @@
+com/domesticconnects/gateway/config/CorsConfig.class
+com/domesticconnects/gateway/config/GatewayConfig.class
+com/domesticconnects/gateway/filter/JwtAuthGlobalFilter.class
+com/domesticconnects/gateway/ApiGatewayApplication.class
