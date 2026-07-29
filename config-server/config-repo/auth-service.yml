@@ -1,0 +1,30 @@
+# Configuration for auth-service
+# Served by config-server on port 8888.
+
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/domestic_connects_auth
+    username: ${AUTH_DB_USERNAME:app_user}
+    password: ${AUTH_DB_PASSWORD:app_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET:change-me-in-production}
+  expiration-ms: 86400000
+
+logging:
+  level:
+    com.domesticconnects.auth: DEBUG
