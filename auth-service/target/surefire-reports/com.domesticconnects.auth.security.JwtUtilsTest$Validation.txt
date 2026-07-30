@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.domesticconnects.auth.security.JwtUtilsTest$Validation
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.domesticconnects.auth.security.JwtUtilsTest$Validation
