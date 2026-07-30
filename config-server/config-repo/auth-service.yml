@@ -8,22 +8,34 @@ spring:
   application:
     name: auth-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/domestic_connects_auth
-    username: ${AUTH_DB_USERNAME:app_user}
-    password: ${AUTH_DB_PASSWORD:app_password}
-    driver-class-name: org.postgresql.Driver
+    url: jdbc:mysql://localhost:3306/domestic_connects_auth?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${AUTH_DB_USERNAME:root}
+    password: ${AUTH_DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
 jwt:
-  secret: ${JWT_SECRET:change-me-in-production}
-  expiration-ms: 86400000
+  secret: ${JWT_SECRET:aSecretKeyForJwtTokenGenerationAndValidationMustBeAtLeast256BitsLong}
+  access-token-expiration: 900000       # 15 minutes in milliseconds
+  refresh-token-expiration: 604800000   # 7 days in milliseconds
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
 
 logging:
   level:

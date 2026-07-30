@@ -1,0 +1,6 @@
+/Users/nika/Project/domestic-connects/auth-service/src/test/java/com/domesticconnects/auth/controller/AuthControllerIntegrationTest.java
+/Users/nika/Project/domestic-connects/auth-service/src/test/java/com/domesticconnects/auth/controller/AdminControllerIntegrationTest.java
+/Users/nika/Project/domestic-connects/auth-service/src/test/java/com/domesticconnects/auth/security/CustomUserDetailsServiceTest.java
+/Users/nika/Project/domestic-connects/auth-service/src/test/java/com/domesticconnects/auth/exception/GlobalExceptionHandlerTest.java
+/Users/nika/Project/domestic-connects/auth-service/src/test/java/com/domesticconnects/auth/security/JwtUtilsTest.java
+/Users/nika/Project/domestic-connects/auth-service/src/test/java/com/domesticconnects/auth/service/AuthServiceTest.java
