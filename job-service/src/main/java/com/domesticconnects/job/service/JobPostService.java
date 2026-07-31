@@ -1,0 +1,123 @@
+package com.domesticconnects.job.service;
+
+import com.domesticconnects.job.dto.JobPostRequest;
+import com.domesticconnects.job.dto.JobPostResponse;
+import com.domesticconnects.job.entity.JobPost;
+import com.domesticconnects.job.entity.JobStatus;
+import com.domesticconnects.job.exception.JobStatusException;
+import com.domesticconnects.job.exception.ResourceNotFoundException;
+import com.domesticconnects.job.repository.JobPostRepository;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class JobPostService {
+
+    private static final Logger log = LoggerFactory.getLogger(JobPostService.class);
+
+    private final JobPostRepository jobPostRepository;
+
+    @Transactional
+    public JobPostResponse createJobPost(JobPostRequest request) {
+        JobPost jobPost = JobPost.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .employerId(request.getEmployerId())
+                .wagePerDay(request.getWagePerDay())
+                .location(request.getLocation())
+                .status(JobStatus.OPEN)
+                .build();
+
+        jobPost = jobPostRepository.save(jobPost);
+
+        log.info("Job post created with id: {}", jobPost.getId());
+        return toResponse(jobPost);
+    }
+
+    @Transactional(readOnly = true)
+    public List<JobPostResponse> getAllJobPosts() {
+        return jobPostRepository.findAllActive().stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public JobPostResponse getJobPost(Long id) {
+        return toResponse(findActiveJobPost(id));
+    }
+
+    @Transactional
+    public JobPostResponse updateJobPost(Long id, JobPostRequest request) {
+        JobPost jobPost = findActiveJobPost(id);
+
+        if (jobPost.getStatus() == JobStatus.CLOSED) {
+            throw new JobStatusException("Cannot update a closed job post");
+        }
+
+        jobPost.setTitle(request.getTitle());
+        jobPost.setDescription(request.getDescription());
+        jobPost.setEmployerId(request.getEmployerId());
+        jobPost.setWagePerDay(request.getWagePerDay());
+        jobPost.setLocation(request.getLocation());
+
+        log.info("Job post updated with id: {}", jobPost.getId());
+        return toResponse(jobPost);
+    }
+
+    /**
+     * Soft deletes a job post by flipping {@code isDeleted} to {@code true}.
+     * The row remains in the database but is hidden from every query.
+     */
+    @Transactional
+    public void softDeleteJobPost(Long id) {
+        JobPost jobPost = findActiveJobPost(id);
+        jobPost.setDeleted(true);
+
+        log.info("Job post soft-deleted with id: {}", id);
+    }
+
+    /**
+     * Assigns a worker to a job post, moving its status to {@code ASSIGNED}.
+     */
+    @Transactional
+    public JobPostResponse assignWorker(Long id, Long workerId) {
+        JobPost jobPost = findActiveJobPost(id);
+
+        if (jobPost.getStatus() == JobStatus.CLOSED) {
+            throw new JobStatusException("Cannot assign a worker to a closed job post");
+        }
+
+        jobPost.setStatus(JobStatus.ASSIGNED);
+
+        log.info("Worker {} assigned to job post {}", workerId, id);
+        return toResponse(jobPost);
+    }
+
+    /**
+     * Fetches a job post that is neither deleted nor missing.
+     */
+    private JobPost findActiveJobPost(Long id) {
+        return jobPostRepository.findActiveById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("JobPost", "id", id));
+    }
+
+    private JobPostResponse toResponse(JobPost jobPost) {
+        return JobPostResponse.builder()
+                .id(jobPost.getId())
+                .title(jobPost.getTitle())
+                .description(jobPost.getDescription())
+                .employerId(jobPost.getEmployerId())
+                .wagePerDay(jobPost.getWagePerDay())
+                .location(jobPost.getLocation())
+                .status(jobPost.getStatus())
+                .createdAt(jobPost.getCreatedAt())
+                .build();
+    }
+}
