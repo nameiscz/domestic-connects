@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.domesticconnects.auth.service.AuthServiceTest$Register
--------------------------------------------------------------------------------
-Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in com.domesticconnects.auth.service.AuthServiceTest$Register
