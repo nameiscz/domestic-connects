@@ -113,7 +113,7 @@ eureka:
 # JWT Configuration (shared secret — must match auth-service)
 # --------------------------------------------------------------------------
 jwt:
-  secret: ${JWT_SECRET:change-me-in-production}
+  secret: ${JWT_SECRET:aSecretKeyForJwtTokenGenerationAndValidationMustBeAtLeast256BitsLong}
   expiration-ms: 86400000
 
 # --------------------------------------------------------------------------
