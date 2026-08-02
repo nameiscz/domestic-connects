@@ -1,5 +1,9 @@
 package com.domesticconnects.gateway.filter;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,18 +18,21 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+
 /**
  * Global pre-filter that intercepts every request entering the Gateway,
  * extracts the JWT from the {@code Authorization} header, and validates it.
  * <p>
- * <b>Stub implementation:</b> Currently logs the token presence and
- * passes it through.  Replace the body of {@link #validateToken(String)}
- * with real JWT parsing/verification (e.g. using the {@code jjwt} library
- * and the secret from {@code jwt.secret}).
+ * The JWT is parsed and its signature verified using the shared
+ * {@code jwt.secret} (sourced from config-server, same value as auth-service).
+ * On success the caller's user id and role are forwarded downstream as
+ * {@code X-User-Id} and {@code X-User-Role} / {@code X-User-Roles} headers so
+ * backend services can enforce authorisation without re-parsing the token.
  * <p>
- * Public endpoints (e.g. login, register) should be whitelisted so the
- * filter does not reject them.  Whitelist paths are checked before any
- * validation takes place.
+ * Public endpoints (login, register, refresh, verify, health) are whitelisted
+ * and skip validation entirely.
  */
 @Component
 public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
@@ -37,12 +44,12 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
 
     /**
      * Request paths that do <b>not</b> require a valid JWT.
-     * Add to this list as needed.
      */
     private static final String[] WHITELIST = {
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh",
+            "/api/auth/verify",
             "/actuator/health"
     };
 
@@ -72,16 +79,25 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
             return respondUnauthorized(exchange, "Empty JWT token");
         }
 
-        // ---- 3. Validate token (STUB — replace with real validation) ----
-        if (!validateToken(token)) {
+        // ---- 3. Validate the token (signature + expiry + type) ----
+        Claims claims = parseClaims(token);
+        if (claims == null) {
             log.warn("JWT validation failed for path: {}", path);
             return respondUnauthorized(exchange, "Invalid or expired JWT token");
         }
 
-        // ---- 4. Pass validated token downstream (e.g. as a header) ----
+        // Only access tokens may call protected endpoints; refresh tokens
+        // must be exchanged at /api/auth/refresh first.
+        if (!"access".equals(claims.get("type"))) {
+            log.warn("JWT rejected for path {}: token type is not 'access'", path);
+            return respondUnauthorized(exchange, "Invalid token type");
+        }
+
+        // ---- 4. Pass validated identity downstream ----
         ServerHttpRequest mutatedRequest = request.mutate()
-                .header("X-User-Id", extractUserId(token))
-                .header("X-User-Roles", extractRoles(token))
+                .header("X-User-Id", extractUserId(claims))
+                .header("X-User-Role", extractRole(claims))
+                .header("X-User-Roles", extractRole(claims))
                 .build();
 
         log.debug("JWT validated successfully for path: {}", path);
@@ -111,76 +127,54 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
     }
 
     /**
-     * Validates the JWT token.
-     * <p>
-     * <b>Stub:</b> Always returns {@code true}. Replace with real
-     * signature verification (e.g., JJWT or Nimbus JOSE + JWT).
-     *
-     * @param token the raw JWT string
-     * @return {@code true} if the token is valid
+     * Parses and verifies the JWT token. Returns the claims on success, or
+     * {@code null} when the token is malformed, expired, or not signed with
+     * the shared secret.
      */
-    private boolean validateToken(String token) {
-        // TODO: Implement real JWT validation using jwt.secret from config
-        // Example (with jjwt library on classpath):
-        //
-        //   String secret = environment.getProperty("jwt.secret");
-        //   if (secret == null || secret.isEmpty()) {
-        //       log.error("jwt.secret is not configured");
-        //       return false;
-        //   }
-        //   try {
-        //       Claims claims = Jwts.parserBuilder()
-        //               .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
-        //               .build()
-        //               .parseClaimsJws(token)
-        //               .getBody();
-        //       return true;
-        //   } catch (JwtException e) {
-        //       log.warn("JWT validation failed: {}", e.getMessage());
-        //       return false;
-        //   }
+    private Claims parseClaims(String token) {
+        String secret = environment.getProperty("jwt.secret");
+        if (secret == null || secret.isEmpty()) {
+            log.error("jwt.secret is not configured in the gateway");
+            return null;
+        }
 
-        log.debug("JWT stub validation — always passes. " +
-                "jwt.secret present={}", environment.containsProperty("jwt.secret"));
-        return true;
+        try {
+            SecretKey signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+            return Jwts.parser()
+                    .verifyWith(signingKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("JWT validation failed: {}", e.getMessage());
+            return null;
+        }
     }
 
     /**
-     * Extracts a user identifier from the JWT (stub).
+     * Extracts the user id from the JWT claims.
      *
-     * @param token the raw JWT string
-     * @return placeholder user ID
+     * @param claims parsed JWT claims
+     * @return the numeric user id, or the subject (email) as a fallback
      */
-    private String extractUserId(String token) {
-        // TODO: Parse claims and extract "sub" or custom "user_id" claim
-        // Example:
-        //   String secret = environment.getProperty("jwt.secret");
-        //   Claims claims = Jwts.parserBuilder()
-        //           .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
-        //           .build()
-        //           .parseClaimsJws(token)
-        //           .getBody();
-        //   return claims.getSubject();
-        return "unknown";
+    private String extractUserId(Claims claims) {
+        Object userId = claims.get("userId");
+        if (userId != null) {
+            return String.valueOf(userId);
+        }
+        String subject = claims.getSubject();
+        return subject != null ? subject : "unknown";
     }
 
     /**
-     * Extracts roles from the JWT (stub).
+     * Extracts the role from the JWT claims.
      *
-     * @param token the raw JWT string
-     * @return placeholder roles string
+     * @param claims parsed JWT claims
+     * @return the role (e.g. {@code EMPLOYER}), or an empty string if absent
      */
-    private String extractRoles(String token) {
-        // TODO: Parse claims and extract "roles" claim
-        // Example:
-        //   String secret = environment.getProperty("jwt.secret");
-        //   Claims claims = Jwts.parserBuilder()
-        //           .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
-        //           .build()
-        //           .parseClaimsJws(token)
-        //           .getBody();
-        //   return claims.get("roles", String.class);
-        return "ROLE_USER";
+    private String extractRole(Claims claims) {
+        Object role = claims.get("role");
+        return role != null ? String.valueOf(role) : "";
     }
 
     /**
@@ -189,7 +183,8 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
     private Mono<Void> respondUnauthorized(ServerWebExchange exchange, String message) {
         exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
         exchange.getResponse().getHeaders().set(HttpHeaders.CONTENT_TYPE, "application/json");
-        byte[] body = String.format("{\"error\":\"Unauthorized\",\"message\":\"%s\"}", message).getBytes();
+        byte[] body = String.format("{\"error\":\"Unauthorized\",\"message\":\"%s\"}", message)
+                .getBytes(StandardCharsets.UTF_8);
         return exchange.getResponse()
                 .writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(body)));
     }

@@ -1,16 +1,16 @@
-# Configuration for job-service
+# Configuration for attendance-service
 # Served by config-server on port 8888.
 
 server:
-  port: 8082
+  port: 8083
 
 spring:
   application:
-    name: job-service
+    name: attendance-service
   datasource:
-    url: jdbc:mysql://localhost:3306/domestic_connects_jobs?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${JOBS_DB_USERNAME:root}
-    password: ${JOBS_DB_PASSWORD:root@123}
+    url: jdbc:mysql://localhost:3306/domestic_connects_attendance?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${ATTENDANCE_DB_USERNAME:root}
+    password: ${ATTENDANCE_DB_PASSWORD:root@123}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -34,4 +34,4 @@ eureka:
 
 logging:
   level:
-    com.domesticconnects.job: DEBUG
+    com.domesticconnects.attendance: DEBUG

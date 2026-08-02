@@ -10,7 +10,7 @@ spring:
     config:
       server:
         native:
-          search-locations: file:./config-repo
+          search-locations: file:./config-server/config-repo,file:./config-repo
 
 eureka:
   client:
@@ -21,3 +21,8 @@ logging:
   level:
     org.springframework.cloud.config: INFO
     com.netflix.discovery: INFO
+
+jwt:
+  secret: your-256-bit-secret-key-here-make-it-long-and-random-for-security
+  expiration: 900000        # 15 min in ms, adjust to whatever your JwtUtils expects
+  refresh-expiration: 604800000   # 7 days in ms
