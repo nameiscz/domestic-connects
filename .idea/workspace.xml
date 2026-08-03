@@ -5,11 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a6509ac5-05fe-42a6-9b81-94cd08e21e15" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/attendance-service/src/main/java/com/domesticconnects/attendance/controller/AttendanceController.java" beforeDir="false" afterPath="$PROJECT_DIR$/attendance-service/src/main/java/com/domesticconnects/attendance/controller/AttendanceController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/attendance-service/src/main/java/com/domesticconnects/attendance/repository/AttendanceRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/attendance-service/src/main/java/com/domesticconnects/attendance/repository/AttendanceRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/attendance-service/src/main/java/com/domesticconnects/attendance/service/AttendanceService.java" beforeDir="false" afterPath="$PROJECT_DIR$/attendance-service/src/main/java/com/domesticconnects/attendance/service/AttendanceService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/attendance-service/src/test/java/com/domesticconnects/attendance/repository/AttendanceRepositoryTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/attendance-service/src/test/java/com/domesticconnects/attendance/repository/AttendanceRepositoryTest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/attendance-service/src/test/java/com/domesticconnects/attendance/service/AttendanceServiceTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/attendance-service/src/test/java/com/domesticconnects/attendance/service/AttendanceServiceTest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -53,7 +48,7 @@
     "Spring Boot.EurekaServerApplication.executor": "Run",
     "Spring Boot.JobServiceApplication.executor": "Run",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "feature/payroll-service",
+    "git-widget-placeholder": "feature/performance-service",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/nika/Project/domestic-connects",
     "nodejs_package_manager_path": "npm"

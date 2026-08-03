@@ -29,6 +29,7 @@
         <module>job-service</module>
         <module>attendance-service</module>
         <module>payroll-service</module>
+        <module>performance-service</module>
     </modules>
 
     <properties>
