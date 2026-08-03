@@ -1,0 +1,49 @@
+# Configuration for payroll-service
+# Served by config-server on port 8888.
+
+server:
+  port: 8084
+
+spring:
+  application:
+    name: payroll-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/domestic_connects_payroll?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${PAYROLL_DB_USERNAME:root}
+    password: ${PAYROLL_DB_PASSWORD:root@123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+# --------------------------------------------------------------------------
+# Payroll-specific settings
+# --------------------------------------------------------------------------
+payroll:
+  # Role that payroll-service presents to downstream services on internal
+  # OpenFeign calls (attendance-service requires ADMIN/EMPLOYER on its endpoints).
+  internal-role: ADMIN
+  # Letterhead details rendered on every salary slip PDF.
+  company-name: Domestic Connects
+  company-address: 123 Example Street, Hyderabad, Telangana 500001, India
+  company-contact: contact@domesticconnects.com | +91 98765 43210
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+logging:
+  level:
+    com.domesticconnects.payroll: DEBUG

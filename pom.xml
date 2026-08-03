@@ -28,6 +28,7 @@
         <module>auth-service</module>
         <module>job-service</module>
         <module>attendance-service</module>
+        <module>payroll-service</module>
     </modules>
 
     <properties>

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,6 +15,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 
@@ -168,6 +170,24 @@ class GlobalExceptionHandlerTest {
             assertThat(response.getBody()).isNotNull();
             assertThat(response.getBody().getMessage()).contains("Email must be valid");
             assertThat(response.getBody().getMessage()).contains("Password is required");
+        }
+    }
+
+    @Nested
+    @DisplayName("NoResourceFoundException")
+    class NoResourceFound {
+
+        @Test
+        @DisplayName("should return 404 (not 500) for unknown paths")
+        void shouldReturn404() {
+            var ex = new NoResourceFoundException(HttpMethod.GET, "auth/unknown-route");
+
+            ResponseEntity<ApiResponse<Void>> response = handler.handleNoResourceFound(ex);
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+            assertThat(response.getBody()).isNotNull();
+            assertThat(response.getBody().isSuccess()).isFalse();
+            assertThat(response.getBody().getMessage()).contains("auth/unknown-route");
         }
     }
 
