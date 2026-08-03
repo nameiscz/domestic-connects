@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Attendance endpoints. Authentication is performed by the API gateway, which
@@ -48,6 +49,16 @@ public class AttendanceController {
         requireRole(httpRequest, ROLE_ADMIN, ROLE_EMPLOYER);
         return ResponseEntity.ok(
                 attendanceService.getWorkerAttendance(workerId, month, year));
+    }
+
+    @GetMapping("/workers")
+    public ResponseEntity<List<Long>> getWorkersWithAttendance(
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            HttpServletRequest httpRequest) {
+        requireRole(httpRequest, ROLE_ADMIN, ROLE_EMPLOYER);
+        return ResponseEntity.ok(
+                attendanceService.getWorkerIdsWithAttendance(month, year));
     }
 
     /**

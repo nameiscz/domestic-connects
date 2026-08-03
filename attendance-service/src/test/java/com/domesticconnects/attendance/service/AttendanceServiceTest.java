@@ -110,6 +110,20 @@ class AttendanceServiceTest {
     }
 
     @Test
+    @DisplayName("getWorkerIdsWithAttendance should return distinct workers for the month")
+    void getWorkerIdsWithAttendance_returnsDistinctWorkers() {
+        when(attendanceRepository.findDistinctWorkerIdsByDateBetween(
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31)))
+                .thenReturn(List.of(10L, 11L));
+
+        List<Long> result = attendanceService.getWorkerIdsWithAttendance(8, 2026);
+
+        assertThat(result).containsExactly(10L, 11L);
+        verify(attendanceRepository).findDistinctWorkerIdsByDateBetween(
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+    }
+
+    @Test
     @DisplayName("getWorkerAttendance should reject an invalid month")
     void getWorkerAttendance_rejectsInvalidMonth() {
         assertThatThrownBy(() -> attendanceService.getWorkerAttendance(10L, 13, 2026))

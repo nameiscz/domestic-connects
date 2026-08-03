@@ -58,6 +58,20 @@ class AttendanceRepositoryTest {
     }
 
     @Test
+    @DisplayName("findDistinctWorkerIdsByDateBetween should return each worker only once")
+    void findDistinctWorkerIdsByDateBetween_returnsDistinctWorkers() {
+        attendanceRepository.save(createAttendance(10L, LocalDate.of(2026, 8, 1), AttendanceStatus.PRESENT));
+        attendanceRepository.save(createAttendance(10L, LocalDate.of(2026, 8, 15), AttendanceStatus.HALF_DAY));
+        attendanceRepository.save(createAttendance(11L, LocalDate.of(2026, 8, 20), AttendanceStatus.PRESENT));
+        attendanceRepository.save(createAttendance(11L, LocalDate.of(2026, 9, 1), AttendanceStatus.PRESENT));
+
+        List<Long> result = attendanceRepository.findDistinctWorkerIdsByDateBetween(
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+
+        assertThat(result).containsExactly(10L, 11L);
+    }
+
+    @Test
     @DisplayName("unique constraint should reject a second record for the same worker and date")
     void uniqueConstraint_rejectsDuplicateWorkerDate() {
         LocalDate date = LocalDate.of(2026, 8, 3);

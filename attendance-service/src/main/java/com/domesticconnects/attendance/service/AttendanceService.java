@@ -89,6 +89,18 @@ public class AttendanceService {
     }
 
     /**
+     * Returns the distinct worker ids that have at least one attendance record
+     * in the given month/year (defaults to the current month when omitted).
+     * Used by payroll-service to generate batch salary slips.
+     */
+    @Transactional(readOnly = true)
+    public List<Long> getWorkerIdsWithAttendance(Integer month, Integer year) {
+        YearMonth yearMonth = resolveYearMonth(month, year);
+        return attendanceRepository.findDistinctWorkerIdsByDateBetween(
+                yearMonth.atDay(1), yearMonth.atEndOfMonth());
+    }
+
+    /**
      * Resolves the requested period. Either parameter may be omitted; when
      * omitted it falls back to the current month/year.
      */
