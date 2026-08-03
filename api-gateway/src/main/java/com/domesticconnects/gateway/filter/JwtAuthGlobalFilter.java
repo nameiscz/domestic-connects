@@ -30,6 +30,8 @@ import java.nio.charset.StandardCharsets;
  * On success the caller's user id and role are forwarded downstream as
  * {@code X-User-Id} and {@code X-User-Role} / {@code X-User-Roles} headers so
  * backend services can enforce authorisation without re-parsing the token.
+ * Any client-supplied {@code X-User-*} headers are stripped first so a caller
+ * can never spoof their identity by sending forged headers directly.
  * <p>
  * Public endpoints (login, register, refresh, verify, health) are whitelisted
  * and skip validation entirely.
@@ -55,6 +57,11 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
+    /** Identity headers forwarded to backend services — always gateway-controlled. */
+    private static final String[] TRUSTED_HEADERS = {
+            "X-User-Id", "X-User-Role", "X-User-Roles"
+    };
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
@@ -63,7 +70,16 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
         // ---- 1. Skip authentication for whitelisted endpoints ----
         if (isWhitelisted(path)) {
             log.debug("Skipping JWT check for whitelisted path: {}", path);
-            return chain.filter(exchange);
+            // Still strip any client-supplied identity headers so a caller can
+            // never smuggle forged roles into backend services via public routes.
+            ServerHttpRequest stripped = request.mutate()
+                    .headers(headers -> {
+                        for (String header : TRUSTED_HEADERS) {
+                            headers.remove(header);
+                        }
+                    })
+                    .build();
+            return chain.filter(exchange.mutate().request(stripped).build());
         }
 
         // ---- 2. Extract Authorization header ----
@@ -95,6 +111,13 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
 
         // ---- 4. Pass validated identity downstream ----
         ServerHttpRequest mutatedRequest = request.mutate()
+                .headers(headers -> {
+                    // Strip any client-forged identity headers before injecting
+                    // the trusted ones derived from the validated token.
+                    for (String header : TRUSTED_HEADERS) {
+                        headers.remove(header);
+                    }
+                })
                 .header("X-User-Id", extractUserId(claims))
                 .header("X-User-Role", extractRole(claims))
                 .header("X-User-Roles", extractRole(claims))
