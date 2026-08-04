@@ -1,5 +1,6 @@
 package com.domesticconnects.admin.service;
 
+import com.domesticconnects.admin.config.RedisCacheConfig;
 import com.domesticconnects.admin.dto.AttendanceSummary;
 import com.domesticconnects.admin.dto.DashboardAnalytics;
 import com.domesticconnects.admin.dto.DashboardSummary;
@@ -10,6 +11,7 @@ import com.domesticconnects.admin.dto.UserRole;
 import com.domesticconnects.admin.dto.WorkerAttendanceReport;
 import com.domesticconnects.admin.dto.WorkerPerformanceReport;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -39,6 +41,7 @@ public class AdminService {
     // Public dashboard endpoints
     // ------------------------------------------------------------------
 
+    @Cacheable(cacheNames = RedisCacheConfig.CACHE_DASHBOARD_SUMMARY, key = "'summary'")
     public DashboardSummary getDashboardSummary() {
         List<UserInfo> users = getUsers();
         List<JobPostResponse> jobs = getJobs();

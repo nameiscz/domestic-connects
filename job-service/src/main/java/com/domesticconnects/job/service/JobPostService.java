@@ -1,6 +1,7 @@
 package com.domesticconnects.job.service;
 
 import com.domesticconnects.job.audit.Auditable;
+import com.domesticconnects.job.config.RedisCacheConfig;
 import com.domesticconnects.job.dto.JobPostRequest;
 import com.domesticconnects.job.dto.JobPostResponse;
 import com.domesticconnects.job.entity.JobPost;
@@ -11,6 +12,9 @@ import com.domesticconnects.job.repository.JobPostRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +31,7 @@ public class JobPostService {
 
     @Transactional
     @Auditable(action = "CREATE", entity = "JobPost", newValueParam = 0)
+    @CacheEvict(cacheNames = RedisCacheConfig.CACHE_JOB_POSTS, allEntries = true)
     public JobPostResponse createJobPost(JobPostRequest request) {
         JobPost jobPost = JobPost.builder()
                 .title(request.getTitle())
@@ -43,6 +48,7 @@ public class JobPostService {
         return toResponse(jobPost);
     }
 
+    @Cacheable(cacheNames = RedisCacheConfig.CACHE_JOB_POSTS)
     @Transactional(readOnly = true)
     public List<JobPostResponse> getAllJobPosts() {
         return jobPostRepository.findAllActive().stream()
@@ -50,6 +56,7 @@ public class JobPostService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(cacheNames = RedisCacheConfig.CACHE_JOB_POST, key = "#id")
     @Transactional(readOnly = true)
     public JobPostResponse getJobPost(Long id) {
         return toResponse(findActiveJobPost(id));
@@ -57,6 +64,10 @@ public class JobPostService {
 
     @Transactional
     @Auditable(action = "UPDATE", entity = "JobPost", idParam = 0, newValueParam = 1)
+    @Caching(evict = {
+            @CacheEvict(cacheNames = RedisCacheConfig.CACHE_JOB_POSTS, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.CACHE_JOB_POST, key = "#id")
+    })
     public JobPostResponse updateJobPost(Long id, JobPostRequest request) {
         JobPost jobPost = findActiveJobPost(id);
 
@@ -81,6 +92,10 @@ public class JobPostService {
     @Transactional
     @Auditable(action = "DELETE", entity = "JobPost", idParam = 0,
             oldValueParam = 0, detail = "Soft-delete job post")
+    @Caching(evict = {
+            @CacheEvict(cacheNames = RedisCacheConfig.CACHE_JOB_POSTS, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.CACHE_JOB_POST, key = "#id")
+    })
     public void softDeleteJobPost(Long id) {
         JobPost jobPost = findActiveJobPost(id);
         jobPost.setDeleted(true);
@@ -94,6 +109,10 @@ public class JobPostService {
     @Transactional
     @Auditable(action = "ASSIGN", entity = "JobPost", idParam = 0,
             newValueParam = 1, detail = "Assign worker to job post")
+    @Caching(evict = {
+            @CacheEvict(cacheNames = RedisCacheConfig.CACHE_JOB_POSTS, allEntries = true),
+            @CacheEvict(cacheNames = RedisCacheConfig.CACHE_JOB_POST, key = "#id")
+    })
     public JobPostResponse assignWorker(Long id, Long workerId) {
         JobPost jobPost = findActiveJobPost(id);
 

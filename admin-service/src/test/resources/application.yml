@@ -7,6 +7,10 @@ spring:
   cloud:
     config:
       enabled: false
+  # No Redis in tests — @Cacheable methods act as pass-throughs so each test
+  # recomputes from the mocked downstream clients.
+  cache:
+    type: none
     openfeign:
       client:
         config:
