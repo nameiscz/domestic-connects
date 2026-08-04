@@ -38,6 +38,13 @@
         <spring-cloud.version>2023.0.1</spring-cloud.version>
         <jjwt.version>0.12.5</jjwt.version>
         <lombok.version>1.18.46</lombok.version>
+        <!-- mysql-connector-j 8.3.0 (Boot 3.2.5 default) fails to load
+             com.mysql.cj.protocol.ExportControlled on JDK 24+ / Java 25,
+             breaking connection-pool reconnects with NoClassDefFoundError.
+             9.x adds full support for newer JDKs. Each service pom pins the
+             version explicitly because the Boot parent pom's BOM is
+             pre-interpolated, so a property override here has no effect. -->
+        <mysql.version>9.3.0</mysql.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
