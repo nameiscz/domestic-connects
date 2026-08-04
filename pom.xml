@@ -31,6 +31,7 @@
         <module>payroll-service</module>
         <module>performance-service</module>
         <module>admin-service</module>
+        <module>notification-service</module>
     </modules>
 
     <properties>
