@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -152,6 +153,25 @@ public class AuthService {
         log.info("Email verified for user: {}", user.getEmail());
 
         return ApiResponse.success("Email verified successfully", null);
+    }
+
+    /**
+     * Lists all registered users (admin function). Consumed by admin-service
+     * for the dashboard user counts and users-by-role analytics.
+     */
+    public ApiResponse<List<AuthResponse.UserInfo>> getAllUsers() {
+        List<AuthResponse.UserInfo> users = userRepository.findAll().stream()
+                .map(user -> AuthResponse.UserInfo.builder()
+                        .id(user.getId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .role(user.getRole())
+                        .isVerified(user.isVerified())
+                        .isActive(user.isActive())
+                        .build())
+                .toList();
+
+        return ApiResponse.success("Users fetched successfully", users);
     }
 
     /**

@@ -1,0 +1,70 @@
+# Configuration for admin-service
+# Served by config-server on port 8888.
+
+server:
+  port: 8086
+
+spring:
+  application:
+    name: admin-service
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 3000
+            read-timeout: 5000
+
+# --------------------------------------------------------------------------
+# Admin-specific settings
+# --------------------------------------------------------------------------
+admin:
+  # Role admin-service presents to downstream services on internal OpenFeign
+  # calls (job/attendance/performance services require ADMIN on their endpoints).
+  internal-role: ADMIN
+
+# --------------------------------------------------------------------------
+# Resilience4j circuit breakers — one instance per downstream service
+# --------------------------------------------------------------------------
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        minimum-number-of-calls: 5
+        # Only Feign failures (HTTP errors, connect/read timeouts ->
+        # FeignException subclasses) trip the breaker. Other runtime
+        # exceptions still trigger the fallback but do not open the circuit.
+        record-exceptions:
+          - feign.FeignException
+    instances:
+      authService:
+        base-config: default
+      jobService:
+        base-config: default
+      attendanceService:
+        base-config: default
+      performanceService:
+        base-config: default
+
+# --------------------------------------------------------------------------
+# Eureka Client — register with the discovery server
+# --------------------------------------------------------------------------
+eureka:
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+logging:
+  level:
+    com.domesticconnects.admin: DEBUG
+    com.domesticconnects.admin.client: DEBUG

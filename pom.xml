@@ -30,6 +30,7 @@
         <module>attendance-service</module>
         <module>payroll-service</module>
         <module>performance-service</module>
+        <module>admin-service</module>
     </modules>
 
     <properties>

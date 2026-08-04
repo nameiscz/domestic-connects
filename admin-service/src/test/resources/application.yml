@@ -1,0 +1,46 @@
+# Overrides the main application.yml during tests.
+# Removes config-server import and disables Eureka registration.
+
+spring:
+  application:
+    name: admin-service
+  cloud:
+    config:
+      enabled: false
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 3000
+            read-timeout: 5000
+
+eureka:
+  client:
+    enabled: false
+
+admin:
+  internal-role: ADMIN
+
+# Higher minimum-number-of-calls than prod so a single failing worker's
+# request does not trip the shared attendance circuit mid-aggregation; the
+# per-call fallback behaviour is what these tests assert.
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 2
+        minimum-number-of-calls: 5
+        record-exceptions:
+          - feign.FeignException
+    instances:
+      authService:
+        base-config: default
+      jobService:
+        base-config: default
+      attendanceService:
+        base-config: default
+      performanceService:
+        base-config: default

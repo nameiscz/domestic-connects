@@ -2,6 +2,7 @@ package com.domesticconnects.auth.config;
 
 import com.domesticconnects.auth.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -41,6 +42,10 @@ public class SecurityConfig {
                                 "/auth/verify/**",
                                 "/actuator/health"
                         ).permitAll()
+                        // Read-only user listing consumed by admin-service over
+                        // direct Feign (no JWT). Authorisation is enforced inside
+                        // the controller via the gateway-forwarded X-User-Role header.
+                        .requestMatchers(HttpMethod.GET, "/auth/admin/users").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
