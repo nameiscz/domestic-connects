@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -134,6 +135,45 @@ class AdminControllerIntegrationTest {
             mockMvc.perform(patch("/auth/admin/users/{id}/deactivate", 9999L)
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /auth/admin/users")
+    class GetUsers {
+
+        @Test
+        @DisplayName("should return all users for an ADMIN X-User-Role header")
+        void shouldReturnUsersForAdminHeader() throws Exception {
+            createAndSaveUser(400L, "admin@example.com", Role.ADMIN, true);
+            createAndSaveUser(401L, "worker@example.com", Role.WORKER, true);
+            createAndSaveUser(402L, "employer@example.com", Role.EMPLOYER, true);
+
+            mockMvc.perform(get("/auth/admin/users")
+                            .header("X-User-Role", "ADMIN"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.length()").value(3))
+                    .andExpect(jsonPath("$.data[1].role").value("WORKER"))
+                    // Locks the wire format admin-service deserializes:
+                    // isVerified/isActive serialize as "verified"/"active".
+                    .andExpect(jsonPath("$.data[0].verified").value(true))
+                    .andExpect(jsonPath("$.data[0].active").value(true));
+        }
+
+        @Test
+        @DisplayName("should return 403 when the role header is missing")
+        void shouldReturn403WhenRoleHeaderMissing() throws Exception {
+            mockMvc.perform(get("/auth/admin/users"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 403 for a non-admin role header")
+        void shouldReturn403ForNonAdminRoleHeader() throws Exception {
+            mockMvc.perform(get("/auth/admin/users")
+                            .header("X-User-Role", "WORKER"))
+                    .andExpect(status().isForbidden());
         }
     }
 
