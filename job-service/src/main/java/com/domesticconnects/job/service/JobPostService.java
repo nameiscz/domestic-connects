@@ -1,5 +1,6 @@
 package com.domesticconnects.job.service;
 
+import com.domesticconnects.job.audit.Auditable;
 import com.domesticconnects.job.dto.JobPostRequest;
 import com.domesticconnects.job.dto.JobPostResponse;
 import com.domesticconnects.job.entity.JobPost;
@@ -25,6 +26,7 @@ public class JobPostService {
     private final JobPostRepository jobPostRepository;
 
     @Transactional
+    @Auditable(action = "CREATE", entity = "JobPost", newValueParam = 0)
     public JobPostResponse createJobPost(JobPostRequest request) {
         JobPost jobPost = JobPost.builder()
                 .title(request.getTitle())
@@ -54,6 +56,7 @@ public class JobPostService {
     }
 
     @Transactional
+    @Auditable(action = "UPDATE", entity = "JobPost", idParam = 0, newValueParam = 1)
     public JobPostResponse updateJobPost(Long id, JobPostRequest request) {
         JobPost jobPost = findActiveJobPost(id);
 
@@ -76,6 +79,8 @@ public class JobPostService {
      * The row remains in the database but is hidden from every query.
      */
     @Transactional
+    @Auditable(action = "DELETE", entity = "JobPost", idParam = 0,
+            oldValueParam = 0, detail = "Soft-delete job post")
     public void softDeleteJobPost(Long id) {
         JobPost jobPost = findActiveJobPost(id);
         jobPost.setDeleted(true);
@@ -87,6 +92,8 @@ public class JobPostService {
      * Assigns a worker to a job post, moving its status to {@code ASSIGNED}.
      */
     @Transactional
+    @Auditable(action = "ASSIGN", entity = "JobPost", idParam = 0,
+            newValueParam = 1, detail = "Assign worker to job post")
     public JobPostResponse assignWorker(Long id, Long workerId) {
         JobPost jobPost = findActiveJobPost(id);
 

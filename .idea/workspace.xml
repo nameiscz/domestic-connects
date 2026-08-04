@@ -5,8 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a6509ac5-05fe-42a6-9b81-94cd08e21e15" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api-gateway/target/classes/com/domesticconnects/gateway/filter/JwtAuthGlobalFilter.class" beforeDir="false" afterPath="$PROJECT_DIR$/api-gateway/target/classes/com/domesticconnects/gateway/filter/JwtAuthGlobalFilter.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/attendance-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/attendance-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/auth-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/job-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/job-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/job-service/src/main/java/com/domesticconnects/job/service/JobPostService.java" beforeDir="false" afterPath="$PROJECT_DIR$/job-service/src/main/java/com/domesticconnects/job/service/JobPostService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payroll-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/payroll-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/performance-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/performance-service/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,7 +56,7 @@
     "Spring Boot.PayrollServiceApplication.executor": "Run",
     "Spring Boot.PerformanceServiceApplication.executor": "Run",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "dev",
+    "git-widget-placeholder": "feature/audit-logging",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/Users/nika/Project/domestic-connects",
     "nodejs_package_manager_path": "npm"
