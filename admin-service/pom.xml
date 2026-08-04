@@ -49,6 +49,12 @@
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
         </dependency>
 
+        <!-- Spring Data Redis: @Cacheable backing store for the dashboard summary -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- Spring Cloud: Config Client & Eureka Client -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

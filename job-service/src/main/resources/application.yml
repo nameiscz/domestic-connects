@@ -15,6 +15,14 @@ spring:
         initial-interval: 1000
         max-attempts: 5
         multiplier: 1.5
+  # Redis-backed Spring Cache (cache names/TTLs live in RedisCacheConfig).
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
 
 ---
 spring:

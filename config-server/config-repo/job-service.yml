@@ -20,6 +20,15 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+  # Redis-backed Spring Cache for GET /jobs and GET /jobs/{id}.
+  # Cache names and TTLs are defined in RedisCacheConfig.
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
 
 eureka:
   instance:

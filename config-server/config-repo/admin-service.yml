@@ -14,6 +14,15 @@ spring:
           default:
             connect-timeout: 3000
             read-timeout: 5000
+  # Redis-backed Spring Cache for GET /admin/dashboard/summary (5-minute TTL,
+  # defined in RedisCacheConfig).
+  cache:
+    type: redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
 
 # --------------------------------------------------------------------------
 # Admin-specific settings
