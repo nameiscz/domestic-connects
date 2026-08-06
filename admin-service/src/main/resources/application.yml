@@ -5,7 +5,9 @@ spring:
   application:
     name: admin-service
   config:
-    import: configserver:http://localhost:8888
+    # No URI here: configserver: resolves via spring.cloud.config.uri
+    # (localhost:8888 locally, http://config-server:8888 under the docker profile).
+    import: "configserver:"
   cloud:
     config:
       fail-fast: true

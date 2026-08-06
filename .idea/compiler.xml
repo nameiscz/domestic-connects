@@ -18,12 +18,13 @@
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
-        <module name="performance-service" />
         <module name="job-service" />
         <module name="auth-service" />
         <module name="payroll-service" />
-        <module name="admin-service" />
         <module name="attendance-service" />
+        <module name="performance-service" />
+        <module name="admin-service" />
+        <module name="notification-service" />
       </profile>
     </annotationProcessing>
   </component>
@@ -36,6 +37,7 @@
       <module name="config-server" options="-parameters" />
       <module name="eureka-server" options="-parameters" />
       <module name="job-service" options="-parameters" />
+      <module name="notification-service" options="-parameters" />
       <module name="payroll-service" options="-parameters" />
       <module name="performance-service" options="-parameters" />
     </option>

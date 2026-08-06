@@ -3,16 +3,28 @@
 #   docker compose up --build
 #
 # Brings up:
-#   - MySQL 8.4 (creates all domestic_connects_* databases on first run)
+#   - MySQL 8.4 (one instance; schemas created on first run from
+#     docker/mysql/init — see 01-create-databases.sql)
 #   - Redis 7 (Spring Cache backing store for job/admin services)
-#   - Kafka 3.9 (KRaft, single node) + one-shot topic initializer
+#   - ZooKeeper + Kafka (Confluent 7.7, ZooKeeper-based metadata)
+#     + a one-shot topic initializer
 #   - eureka-server, config-server, api-gateway and all 7 microservices
 #
-# Services run with the `docker` profile (config-server at http://config-server:8888)
-# and override the datasource / Eureka / Kafka settings that default to
+# Every Java service builds from its own Dockerfile (<service>/Dockerfile).
+# Build context is the REPO ROOT (context: .) because the services are Maven
+# reactor modules — the build must see the parent POM and sibling modules
+# (`mvn -pl <service> -am package`).
+#
+# Services run with the `docker` profile (config-server at
+# http://config-server:8888, set in each service's application.yml) and
+# override the datasource / Eureka / Kafka settings that default to
 # `localhost` in config-repo, since inside containers that hostname is wrong.
 #
-#   docker compose down -v   # also removes the MySQL + Kafka data volumes
+#   docker compose down -v   # also removes MySQL / ZooKeeper / Kafka data
+#
+# NOTE: MySQL init scripts only run against an EMPTY data volume. If you have
+# an existing `mysql-data` volume, run `docker compose down -v` once so the
+# new schemas get created.
 
 name: domestic-connects
 
@@ -31,14 +43,17 @@ services:
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+    # Host port is 3307 because a local MySQL usually occupies 3306 on dev
+    # machines. In-network access (mysql:3306) is unaffected — this mapping is
+    # only for host tools (Workbench, CLI). Restore 3306:3306 when 3306 is free.
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql-data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      # mysqladmin ping returns 0 during startup before connections are accepted,
-      # so run a real query instead of relying on the daemon-alive check.
+      # mysqladmin ping returns 0 during startup before connections are
+      # accepted, so run a real query instead of a daemon-alive check.
       test: ["CMD-SHELL", "mysql -h127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD -e 'SELECT 1'"]
       interval: 10s
       timeout: 5s
@@ -58,36 +73,63 @@ services:
       retries: 10
       start_period: 5s
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.1
+    container_name: domestic-connects-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVER_ID: 1
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper
+    healthcheck:
+      # ZK 3.5+ disables most four-letter words by default — only `srvr` is
+      # enabled out of the box. Its response is multi-line, so match the first
+      # line ("Zookeeper version: ...") which is sufficient proof it serves.
+      # Pure bash /dev/tcp — no extra binaries needed.
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/2181; printf \"srvr\" >&3; read -t 2 reply <&3; case \"$$reply\" in *Zookeeper*version*) exit 0;; *) exit 1;; esac'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   kafka:
-    image: apache/kafka:3.9.1
+    image: confluentinc/cp-kafka:7.7.1
     container_name: domestic-connects-kafka
     restart: unless-stopped
     environment:
-      # KRaft (no ZooKeeper) — single broker+controller node
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_BROKER_ID: 1
+      # ZooKeeper-backed metadata store (no KRaft) — single broker + single ZK.
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       # PLAINTEXT (in-network) + PLAINTEXT_HOST (host tools on localhost:29092)
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # No CONTROLLER listener: this broker uses ZooKeeper for metadata, not KRaft.
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
       # Topics are pre-created by kafka-init; keep auto-creation off for determinism.
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      # Keep the broker light for local dev.
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
     ports:
-      # Only the PLAINTEXT_HOST listener is mapped. Port 9092 stays internal
-      # (advertised as kafka:9092) — host clients must use localhost:29092.
+      # Only PLAINTEXT_HOST is mapped. 9092 stays internal (advertised as
+      # kafka:9092) — host clients must use localhost:29092.
       - "29092:29092"
     volumes:
       - kafka-data:/var/lib/kafka/data
+    depends_on:
+      zookeeper:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -95,19 +137,18 @@ services:
 
   # One-shot: creates the notification topics the services publish/consume.
   kafka-init:
-    image: apache/kafka:3.9.1
+    image: confluentinc/cp-kafka:7.7.1
     restart: on-failure   # --if-not-exists makes retries idempotent
     depends_on:
       kafka:
         condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
+    entrypoint: ["/bin/bash", "-c"]
     command:
       - |
-        export PATH="/opt/kafka/bin:$$PATH"
-        for t in job-assigned salary-slip-generated performance-reviewed; do
-          echo "Creating topic: $$t"
-          kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists \
-            --topic "$$t" --partitions 1 --replication-factor 1
+        for topic in job-assigned salary-slip-generated performance-reviewed; do
+          echo "Creating topic: $${topic}"
+          kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists \
+            --topic "$${topic}" --partitions 1 --replication-factor 1
         done
 
   # --------------------------------------------------------------------------
@@ -136,7 +177,7 @@ services:
     restart: unless-stopped
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      # Config-repo lives on the host; keep it editable without rebuilding the image.
+      # Config-repo lives on the host; keep it editable without rebuilding.
       SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:/app/config-repo
     volumes:
       - ./config-server/config-repo:/app/config-repo:ro
@@ -159,6 +200,7 @@ services:
     container_name: domestic-connects-gateway
     restart: unless-stopped
     environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
     ports:
       - "8080:8080"
@@ -167,6 +209,12 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # --------------------------------------------------------------------------
   # Microservices
@@ -178,7 +226,11 @@ services:
     container_name: domestic-connects-auth
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/domestic_connects_auth?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      # Env var (not the docker profile) — spring.config.import resolves the
+      # configserver: URI during the initial config-data phase, before
+      # profile-specific documents are available.
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/auth_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
@@ -199,7 +251,8 @@ services:
     container_name: domestic-connects-jobs
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/domestic_connects_jobs?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/job_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
@@ -215,6 +268,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Producer of `job-assigned` — wait for topics to exist.
+      kafka-init:
+        condition: service_completed_successfully
 
   attendance-service:
     build:
@@ -223,7 +279,8 @@ services:
     container_name: domestic-connects-attendance
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/domestic_connects_attendance?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/attendance_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
@@ -244,7 +301,8 @@ services:
     container_name: domestic-connects-payroll
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/domestic_connects_payroll?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/payroll_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
@@ -257,6 +315,9 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
+      # Producer of `salary-slip-generated` — wait for topics to exist.
+      kafka-init:
+        condition: service_completed_successfully
 
   performance-service:
     build:
@@ -265,7 +326,8 @@ services:
     container_name: domestic-connects-performance
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/domestic_connects_performance?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/performance_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
@@ -278,6 +340,9 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
+      # Producer of `performance-reviewed` — wait for topics to exist.
+      kafka-init:
+        condition: service_completed_successfully
 
   admin-service:
     build:
@@ -286,8 +351,11 @@ services:
     container_name: domestic-connects-admin
     restart: unless-stopped
     environment:
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATA_REDIS_HOST: redis
+      # No datasource: admin-service is a stateless aggregator (OpenFeign +
+      # Redis cache). `admin_db` is created by MySQL init for future use.
     ports:
       - "8086:8086"
     depends_on:
@@ -305,7 +373,8 @@ services:
     container_name: domestic-connects-notifications
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/domestic_connects_notifications?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/notification_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
@@ -319,9 +388,11 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
+      # Consumer of all three topics — wait for kafka-init to finish.
       kafka-init:
         condition: service_completed_successfully
 
 volumes:
   mysql-data:
+  zookeeper-data:
   kafka-data:
