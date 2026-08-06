@@ -1,0 +1,76 @@
+# syntax=docker/dockerfile:1
+
+# ============================================================================
+# Multi-stage Dockerfile template — Domestic Connects Spring Boot service
+#
+#   Stage 1 (build):    Maven 3.9 + Temurin JDK 21  -> Spring Boot fat jar
+#   Stage 2 (runtime):  Temurin 21 slim JRE         -> runs as non-root user
+#
+# BUILD FROM THE REPO ROOT (context = .), not from the service folder:
+# the services are Maven reactor modules, so the build must see the parent
+# POM and sibling modules for `-pl <service> -am` to resolve.
+#
+#   docker build -f <service>/Dockerfile -t <service>:latest .
+#   docker compose build <service>
+#
+# Before saving as <service>/Dockerfile, replace:
+#   <service>   -> module/folder name, e.g. auth-service
+#   <port>      -> server.port of the service (EXPOSE line)
+#
+# NOTE: until <service>/<port> are replaced, `docker build --check` will flag
+# the placeholders as errors (e.g. "invalid containerPort"). That is expected
+# for a template; the real per-service Dockerfiles pass the check cleanly.
+#
+# BuildKit (Docker 23+ default) is required for the --mount cache line.
+# ============================================================================
+
+# ------------------------------- BUILD STAGE --------------------------------
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /workspace
+
+# Copy the whole repository (build context = repo root). The cache mount
+# persists ~/.m2 across rebuilds, so dependency resolution is only paid once;
+# subsequent builds skip straight to compiling the changed module.
+COPY . .
+
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -q -pl <service> -am package -Dmaven.test.skip=true
+
+# ------------------------------ RUNTIME STAGE -------------------------------
+# eclipse-temurin:21-jre (Ubuntu Jammy) is the safe slim-JRE default. Swap to
+# eclipse-temurin:21-jre-alpine for a smaller image ONLY if the service needs
+# no musl-incompatible native libraries.
+FROM eclipse-temurin:21-jre
+
+# Container-friendly JVM defaults: heap scales with the container memory limit,
+# G1GC keeps latency low. Override per-deployment with `-e JAVA_OPTS=...`.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom" \
+    TZ=UTC \
+    SPRING_PROFILES_ACTIVE=docker
+
+WORKDIR /app
+
+# Non-root runtime user (uid/gid 10001 — standard for K8s runAsNonRoot and
+# avoids clashing with host users).
+RUN groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid app --home-dir /app --shell /usr/sbin/nologin app \
+    && chown -R app:app /app
+
+COPY --from=build /workspace/<service>/target/*.jar /app/app.jar
+
+USER app
+
+# Shell form lets operators pass -e JAVA_OPTS at runtime (exec form would
+# ignore it). The `docker` profile points config-server at http://config-server:8888
+# and can be overridden with -e SPRING_PROFILES_ACTIVE=prod.
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar --spring.profiles.active=$SPRING_PROFILES_ACTIVE"]
+
+# Replace with the service's actual port (server.port, e.g. 8081 for auth-service).
+# 8080 is just a valid placeholder so `docker build --check` passes pre-replacement.
+EXPOSE 8080
+
+# Optional — only if spring-boot-starter-actuator is on the classpath and
+# management.endpoint.health.probes.enabled=true. Prefer defining healthchecks
+# in docker-compose.yml (bash /dev/tcp probes) to keep this image generic:
+#   HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+#     CMD ["sh", "-c", "exec 3<>/dev/tcp/127.0.0.1/<port>"]
