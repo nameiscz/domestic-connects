@@ -1,0 +1,1516 @@
+{
+  "info": {
+    "_postman_id": "b0d0f5c1-9a2e-4b3d-8c4e-5f6a7b8c9d0e",
+    "name": "Domestic Connects - Worker Lifecycle (Integration)",
+    "description": "End-to-end integration suite for the Domestic Connects microservice platform. Exercises the full worker lifecycle through the API gateway (http://localhost:8080/api/**):\n\n  0. Register worker/employer/admin accounts, verify emails, login, activate\n  1. Employer posts a job and assigns the worker\n  2. Attendance is marked for several days of the month\n  3. Salary slip PDF is generated, downloaded, history + CSV + batch ZIP verified\n  4. Performance review is submitted and read back\n  5. Notifications are received for each triggering event (job-assigned, salary-slip-generated, performance-reviewed)\n  6. Admin dashboard analytics reflect all of the above\n\nTwo infrastructure gaps of the current platform are covered by companion scripts in integration-tests/scripts (see integration-tests/README.md):\n  - Email verification tokens are only stored in MySQL (no mailer exists), so scripts/fetch-verification-tokens.sh extracts them from the auth database.\n  - No service publishes Kafka notification events yet, so scripts/publish-notification-events.sh simulates the producers.\n\nRun headlessly with scripts/run-newman.sh or interactively in Postman by following the manual walkthrough in integration-tests/README.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "month", "value": "01" },
+    { "key": "year", "value": "2026" },
+    { "key": "workerName", "value": "" },
+    { "key": "workerEmail", "value": "" },
+    { "key": "workerPassword", "value": "Passw0rd!123" },
+    { "key": "employerName", "value": "" },
+    { "key": "employerEmail", "value": "" },
+    { "key": "employerPassword", "value": "Passw0rd!123" },
+    { "key": "adminName", "value": "" },
+    { "key": "adminEmail", "value": "" },
+    { "key": "adminPassword", "value": "Passw0rd!123" },
+    { "key": "workerVerifyToken", "value": "" },
+    { "key": "employerVerifyToken", "value": "" },
+    { "key": "adminVerifyToken", "value": "" },
+    { "key": "workerId", "value": "" },
+    { "key": "employerId", "value": "" },
+    { "key": "adminId", "value": "" },
+    { "key": "jobId", "value": "" },
+    { "key": "reviewId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "workerToken", "value": "" },
+    { "key": "employerToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "workerRefreshToken", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Seed run-scoped data ONCE: unique emails, passwords and the current month/year.",
+          "// In phased Newman runs the wrapper pre-supplies these via --environment, so",
+          "// the seed is skipped when workerEmail already exists anywhere.",
+          "function setVar(key,value){pm.collectionVariables.set(key,value);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(key,value);}}",
+          "const alreadySeeded=pm.environment.get('workerEmail')||pm.collectionVariables.get('workerEmail');",
+          "if(!alreadySeeded){",
+          "  const now=new Date();",
+          "  const month=String(now.getMonth()+1).padStart(2,'0');",
+          "  const year=String(now.getFullYear());",
+          "  const stamp=Date.now();",
+          "  setVar('month',month);",
+          "  setVar('year',year);",
+          "  setVar('workerName','Worker '+stamp);",
+          "  setVar('workerEmail','worker.'+stamp+'@it.domesticconnects.local');",
+          "  setVar('workerPassword','Passw0rd!123');",
+          "  setVar('employerName','Employer '+stamp);",
+          "  setVar('employerEmail','employer.'+stamp+'@it.domesticconnects.local');",
+          "  setVar('employerPassword','Passw0rd!123');",
+          "  setVar('adminName','Admin '+stamp);",
+          "  setVar('adminEmail','admin.'+stamp+'@it.domesticconnects.local');",
+          "  setVar('adminPassword','Passw0rd!123');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Register Accounts",
+      "description": "Creates the three accounts used across the whole lifecycle: a WORKER, an EMPLOYER and an ADMIN. Registration returns JWT access tokens, but accounts start unverified (and are activated by the ADMIN in folder 1).",
+      "item": [
+        {
+          "name": "Register worker account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Worker registration returns 201',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Worker account created (role WORKER)',()=>{pm.expect(json.user).to.be.an('object');pm.expect(json.user.role).to.eql('WORKER');});",
+                  "pm.test('Access token issued on registration',()=>pm.expect(json.accessToken).to.be.a('string').and.to.not.be.empty);",
+                  "setVar('workerId',String(json.user.id));",
+                  "console.log('[BOOTSTRAP] workerId='+json.user.id+' email='+json.user.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{workerName}}\",\n  \"email\": \"{{workerEmail}}\",\n  \"password\": \"{{workerPassword}}\",\n  \"role\": \"WORKER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register employer account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Employer registration returns 201',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Employer account created (role EMPLOYER)',()=>{pm.expect(json.user).to.be.an('object');pm.expect(json.user.role).to.eql('EMPLOYER');});",
+                  "pm.test('Access token issued on registration',()=>pm.expect(json.accessToken).to.be.a('string').and.to.not.be.empty);",
+                  "setVar('employerId',String(json.user.id));",
+                  "console.log('[BOOTSTRAP] employerId='+json.user.id+' email='+json.user.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{employerName}}\",\n  \"email\": \"{{employerEmail}}\",\n  \"password\": \"{{employerPassword}}\",\n  \"role\": \"EMPLOYER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register admin account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Admin registration returns 201',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Admin account created (role ADMIN)',()=>{pm.expect(json.user).to.be.an('object');pm.expect(json.user.role).to.eql('ADMIN');});",
+                  "pm.test('Access token issued on registration',()=>pm.expect(json.accessToken).to.be.a('string').and.to.not.be.empty);",
+                  "setVar('adminId',String(json.user.id));",
+                  "console.log('[BOOTSTRAP] adminId='+json.user.id+' email='+json.user.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{adminName}}\",\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\",\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "NEGATIVE: duplicate worker registration is rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Duplicate registration rejected (409)',()=>pm.expect(pm.response.code).to.eql(409));",
+                  "pm.test('Conflict message mentions the existing email',()=>pm.expect(pm.response.json().message).to.include('already exists'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{workerName}}\",\n  \"email\": \"{{workerEmail}}\",\n  \"password\": \"{{workerPassword}}\",\n  \"role\": \"WORKER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Verify, Login & Activate",
+      "description": "Verifies each account email (verification tokens are extracted from MySQL by scripts/fetch-verification-tokens.sh), logs all three users in, exercises the deactivate -> login-rejected -> reactivate -> login-ok cycle, and refreshes the worker's access token.",
+      "item": [
+        {
+          "name": "NEGATIVE: login before email verification is rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login before verification rejected (400)',()=>pm.expect(pm.response.code).to.eql(400));",
+                  "pm.test('Message asks to verify the email first',()=>pm.expect(pm.response.json().message).to.include('verify your email'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{workerEmail}}\",\n  \"password\": \"{{workerPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Verify worker email (token from fetch-verification-tokens.sh)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Verification token was provided by the helper script',()=>{const t=pm.collectionVariables.get('workerVerifyToken')||(pm.environment?pm.environment.get('workerVerifyToken'):'');pm.expect(t).to.be.a('string').and.to.not.eql('');});",
+                  "pm.test('Worker email verified (200)',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Verification success flag is true',()=>pm.expect(pm.response.json().success).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify/{{workerVerifyToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify", "{{workerVerifyToken}}"]
+            }
+          }
+        },
+                {
+          "name": "Verify employer email (token from fetch-verification-tokens.sh)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Verification token was provided by the helper script',()=>{const t=pm.collectionVariables.get('employerVerifyToken')||(pm.environment?pm.environment.get('employerVerifyToken'):'');pm.expect(t).to.be.a('string').and.to.not.eql('');});",
+                  "pm.test('Employer email verified (200)',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Verification success flag is true',()=>pm.expect(pm.response.json().success).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify/{{employerVerifyToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify", "{{employerVerifyToken}}"]
+            }
+          }
+        },
+        {
+          "name": "Verify admin email (token from fetch-verification-tokens.sh)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Verification token was provided by the helper script',()=>{const t=pm.collectionVariables.get('adminVerifyToken')||(pm.environment?pm.environment.get('adminVerifyToken'):'');pm.expect(t).to.be.a('string').and.to.not.eql('');});",
+                  "pm.test('Admin email verified (200)',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Verification success flag is true',()=>pm.expect(pm.response.json().success).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify/{{adminVerifyToken}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify", "{{adminVerifyToken}}"]
+            }
+          }
+        },
+                {
+          "name": "Login worker (verified & active)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Worker login returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Worker is verified and active',()=>{pm.expect(json.user.verified).to.eql(true);pm.expect(json.user.active).to.eql(true);});",
+                  "pm.test('Access token issued',()=>pm.expect(json.accessToken).to.be.a('string').and.to.not.be.empty);",
+                  "setVar('workerToken',json.accessToken);",
+                  "setVar('workerRefreshToken',json.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{workerEmail}}\",\n  \"password\": \"{{workerPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login employer (verified & active)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Employer login returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Employer is verified and active',()=>{pm.expect(json.user.verified).to.eql(true);pm.expect(json.user.active).to.eql(true);});",
+                  "setVar('employerToken',json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{employerEmail}}\",\n  \"password\": \"{{employerPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login admin (verified & active)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Admin login returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Admin is verified and active',()=>{pm.expect(json.user.verified).to.eql(true);pm.expect(json.user.active).to.eql(true);});",
+                  "setVar('adminToken',json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+                {
+          "name": "Admin deactivates worker account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Deactivation returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Message confirms deactivation',()=>pm.expect(pm.response.json().message).to.include('deactivated successfully'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/admin/users/{{workerId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "admin", "users", "{{workerId}}", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: login while deactivated is rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login rejected while deactivated (400)',()=>pm.expect(pm.response.code).to.eql(400));",
+                  "pm.test('Message mentions the deactivated account',()=>pm.expect(pm.response.json().message).to.include('deactivated'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{workerEmail}}\",\n  \"password\": \"{{workerPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Admin reactivates worker account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Activation returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Message confirms activation',()=>pm.expect(pm.response.json().message).to.include('activated successfully'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/admin/users/{{workerId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "admin", "users", "{{workerId}}", "activate"]
+            }
+          }
+        },
+        {
+          "name": "Login worker after reactivation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Worker login returns 200 after reactivation',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Worker is active again',()=>pm.expect(json.user.active).to.eql(true));",
+                  "setVar('workerToken',json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{workerEmail}}\",\n  \"password\": \"{{workerPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh worker access token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Refresh returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('New access token issued',()=>pm.expect(json.accessToken).to.be.a('string').and.to.not.be.empty);",
+                  "setVar('workerToken',json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{workerRefreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "refresh"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Job Posting & Assignment",
+      "description": "The EMPLOYER posts a job with a daily wage, verifies it is listed, then assigns the WORKER to it. Negative cases prove WORKERs cannot create jobs or assign workers.",
+      "item": [
+        {
+          "name": "Employer posts a job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Job creation returns 201',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Job starts OPEN with the requested wage',()=>{pm.expect(json.status).to.eql('OPEN');pm.expect(Number(json.wagePerDay)).to.eql(500);});",
+                  "setVar('jobId',String(json.id));",
+                  "console.log('[JOB] jobId='+json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Household Helper - {{month}}/{{year}}\",\n  \"description\": \"Daily cleaning, cooking and errand support for a family of four. Reliable and punctual worker required for the full month.\",\n  \"employerId\": \"{{employerId}}\",\n  \"wagePerDay\": 500.0,\n  \"location\": \"Bengaluru, Karnataka\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"]
+            }
+          }
+        },
+        {
+          "name": "List active job posts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "pm.test('Job listing returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Listing is an array containing the new job',()=>{pm.expect(json).to.be.an('array');const j=json.find(x=>String(x.id)===pm.collectionVariables.get('jobId'));pm.expect(j).to.be.an('object');pm.expect(j.status).to.eql('OPEN');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"]
+            }
+          }
+        },
+        {
+          "name": "Employer assigns worker to the job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "pm.test('Assignment returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Job status moves to ASSIGNED',()=>pm.expect(json.status).to.eql('ASSIGNED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/assign/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "{{jobId}}", "assign", "{{workerId}}"]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: worker cannot assign workers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Worker assignment attempt rejected (403)',()=>pm.expect(pm.response.code).to.eql(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/assign/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "{{jobId}}", "assign", "{{workerId}}"]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: worker cannot create a job post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Worker job creation attempt rejected (403)',()=>pm.expect(pm.response.code).to.eql(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Should not be allowed\",\n  \"description\": \"This request must be rejected with 403 because WORKERs cannot post jobs.\",\n  \"employerId\": \"{{employerId}}\",\n  \"wagePerDay\": 100.0,\n  \"location\": \"Nowhere\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Attendance",
+      "description": "The EMPLOYER marks attendance for the worker over several days of the current month (3 PRESENT, 1 HALF_DAY, 1 ABSENT) and verifies the monthly report and summary. Duplicate marking is rejected with 409.",
+      "item": [
+        {
+          "name": "Mark attendance - day 1 (PRESENT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Attendance marked (201)',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Record carries the PRESENT status',()=>pm.expect(pm.response.json().status).to.eql('PRESENT'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": \"{{workerId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"date\": \"{{year}}-{{month}}-01\",\n  \"status\": \"PRESENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/mark",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "mark"]
+            }
+          }
+        },
+        {
+          "name": "Mark attendance - day 2 (PRESENT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Attendance marked (201)',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Record carries the PRESENT status',()=>pm.expect(pm.response.json().status).to.eql('PRESENT'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": \"{{workerId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"date\": \"{{year}}-{{month}}-02\",\n  \"status\": \"PRESENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/mark",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "mark"]
+            }
+          }
+        },
+        {
+          "name": "Mark attendance - day 3 (PRESENT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Attendance marked (201)',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Record carries the PRESENT status',()=>pm.expect(pm.response.json().status).to.eql('PRESENT'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": \"{{workerId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"date\": \"{{year}}-{{month}}-03\",\n  \"status\": \"PRESENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/mark",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "mark"]
+            }
+          }
+        },
+                {
+          "name": "Mark attendance - day 4 (HALF_DAY)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Attendance marked (201)',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Record carries the HALF_DAY status',()=>pm.expect(pm.response.json().status).to.eql('HALF_DAY'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": \"{{workerId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"date\": \"{{year}}-{{month}}-04\",\n  \"status\": \"HALF_DAY\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/mark",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "mark"]
+            }
+          }
+        },
+        {
+          "name": "Mark attendance - day 5 (ABSENT)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Attendance marked (201)',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Record carries the ABSENT status',()=>pm.expect(pm.response.json().status).to.eql('ABSENT'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": \"{{workerId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"date\": \"{{year}}-{{month}}-05\",\n  \"status\": \"ABSENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/mark",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "mark"]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: duplicate attendance for day 1 is rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Duplicate attendance rejected (409)',()=>pm.expect(pm.response.code).to.eql(409));",
+                  "pm.test('Message mentions the duplicate',()=>pm.expect(pm.response.json().message).to.include('already marked'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": \"{{workerId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"date\": \"{{year}}-{{month}}-01\",\n  \"status\": \"PRESENT\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/mark",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "mark"]
+            }
+          }
+        },
+        {
+          "name": "Worker attendance report for the month",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "pm.test('Report returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Report contains all 5 records',()=>pm.expect(json.records.length).to.eql(5));",
+                  "pm.test('Summary: 3 present days',()=>pm.expect(json.summary.presentDays).to.eql(3));",
+                  "pm.test('Summary: 1 half day',()=>pm.expect(json.summary.halfDays).to.eql(1));",
+                  "pm.test('Summary: 1 absent day',()=>pm.expect(json.summary.absentDays).to.eql(1));",
+                  "pm.test('Summary: 5 total days',()=>pm.expect(json.summary.totalDays).to.eql(5));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/worker/{{workerId}}?month={{month}}&year={{year}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "worker", "{{workerId}}"],
+              "query": [
+                { "key": "month", "value": "{{month}}" },
+                { "key": "year", "value": "{{year}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Salary Slip & Payroll",
+      "description": "Generates and downloads the monthly salary slip PDF for the worker, verifies the persisted history (3 present days + 0.5 half-day at 500/day = 1750.00), exports history as CSV and downloads the batch ZIP of slips. A worker with no attendance returns 404.",
+      "item": [
+        {
+          "name": "Generate & download salary slip (PDF)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cd=pm.response.headers.get('Content-Disposition')||'';",
+                  "const ct=pm.response.headers.get('Content-Type')||'';",
+                  "pm.test('Salary slip returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Response is a PDF',()=>pm.expect(ct).to.include('application/pdf'));",
+                  "pm.test('Filename is salary-slip-<workerId>-<month>-<year>.pdf',()=>{pm.expect(cd).to.include('salary-slip-'+pm.variables.get('workerId'));pm.expect(cd).to.include('.pdf');});",
+                  "pm.test('PDF body is not empty',()=>pm.expect(pm.response.responseSize).to.be.above(1000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payroll/{{workerId}}/slip?month={{month}}&year={{year}}&workerName={{workerName}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payroll", "{{workerId}}", "slip"],
+              "query": [
+                { "key": "month", "value": "{{month}}" },
+                { "key": "year", "value": "{{year}}" },
+                { "key": "workerName", "value": "{{workerName}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Salary history reflects the generated record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "pm.test('History returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('At least one salary record exists',()=>pm.expect(json.data.length).to.be.at.least(1));",
+                  "pm.test('Present days recorded as 3',()=>pm.expect(json.data[0].presentDays).to.eql(3));",
+                  "pm.test('Gross salary = 3.5 days x 500 = 1750',()=>pm.expect(Number(json.data[0].grossSalary)).to.eql(1750));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payroll/{{workerId}}/history?month={{month}}&year={{year}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payroll", "{{workerId}}", "history"],
+              "query": [
+                { "key": "month", "value": "{{month}}" },
+                { "key": "year", "value": "{{year}}" }
+              ]
+            }
+          }
+        },
+                {
+          "name": "Export salary history (CSV)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ct=pm.response.headers.get('Content-Type')||'';",
+                  "pm.test('CSV export returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Response is CSV',()=>pm.expect(ct).to.include('text/csv'));",
+                  "pm.test('CSV body contains the header and the gross salary',()=>{const body=pm.response.text();pm.expect(body).to.include('Gross Salary');pm.expect(body).to.include('1750.00');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payroll/{{workerId}}/history/export?month={{month}}&year={{year}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payroll", "{{workerId}}", "history", "export"],
+              "query": [
+                { "key": "month", "value": "{{month}}" },
+                { "key": "year", "value": "{{year}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Batch salary slips (ZIP)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ct=pm.response.headers.get('Content-Type')||'';",
+                  "pm.test('Batch slips return 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Response is a ZIP archive',()=>pm.expect(ct).to.include('application/zip'));",
+                  "pm.test('ZIP body is not empty',()=>pm.expect(pm.response.responseSize).to.be.above(100));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payroll/batch/slips?month={{month}}&year={{year}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payroll", "batch", "slips"],
+              "query": [
+                { "key": "month", "value": "{{month}}" },
+                { "key": "year", "value": "{{year}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: slip for a user with no attendance returns 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing attendance yields 404',()=>pm.expect(pm.response.code).to.eql(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payroll/{{adminId}}/slip?month={{month}}&year={{year}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payroll", "{{adminId}}", "slip"],
+              "query": [
+                { "key": "month", "value": "{{month}}" },
+                { "key": "year", "value": "{{year}}" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Performance Review",
+      "description": "The EMPLOYER submits a performance review for the assigned worker (rating 4), verifies the aggregated report, confirms the WORKER can read their own reviews, rejects cross-worker reads, and updates the review to rating 5.",
+      "item": [
+        {
+          "name": "Employer submits a performance review",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Review submission returns 201',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "pm.test('Review is stored with rating 4',()=>pm.expect(json.rating).to.eql(4));",
+                  "setVar('reviewId',String(json.id));",
+                  "console.log('[REVIEW] reviewId='+json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workerId\": \"{{workerId}}\",\n  \"jobId\": \"{{jobId}}\",\n  \"rating\": 4,\n  \"remarks\": \"Consistent, punctual and very reliable. Great with the children.\",\n  \"reviewedBy\": \"{{employerName}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/performance/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "performance", "review"]
+            }
+          }
+        },
+        {
+          "name": "Worker performance report",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "pm.test('Report returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('One review counted',()=>pm.expect(json.reviewCount).to.eql(1));",
+                  "pm.test('Average rating is 4.0',()=>pm.expect(Number(json.averageRating)).to.eql(4));",
+                  "pm.test('Rating distribution covers 1-5',()=>pm.expect(json.ratingDistribution.length).to.eql(5));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/performance/worker/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "performance", "worker", "{{workerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Worker reads their own performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Worker can read own report (200)',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Report is for the worker',()=>pm.expect(String(pm.response.json().workerId)).to.eql(pm.variables.get('workerId')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/performance/worker/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "performance", "worker", "{{workerId}}"]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: worker cannot read another worker's performance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cross-worker read rejected (403)',()=>pm.expect(pm.response.code).to.eql(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/performance/worker/{{employerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "performance", "worker", "{{employerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Employer updates the review to rating 5",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Update returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Rating is now 5',()=>pm.expect(pm.response.json().rating).to.eql(5));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"remarks\": \"Updated after final month: exceeded all expectations.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/performance/review/{{reviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "performance", "review", "{{reviewId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Notifications",
+      "description": "Verifies the worker receives one notification per triggering event (JOB_ASSIGNED, SALARY_SLIP_GENERATED, PERFORMANCE_REVIEWED). No service publishes these events yet, so run scripts/publish-notification-events.sh first (the run-newman.sh wrapper does this automatically).",
+      "item": [
+        {
+          "name": "Worker inbox contains a notification for every event type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Inbox returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Inbox is an array with at least 3 notifications',()=>pm.expect(json.length).to.be.at.least(3));",
+                  "const types=json.map(n=>n.type);",
+                  "pm.test('Received JOB_ASSIGNED notification',()=>pm.expect(types).to.include('JOB_ASSIGNED'));",
+                  "pm.test('Received SALARY_SLIP_GENERATED notification',()=>pm.expect(types).to.include('SALARY_SLIP_GENERATED'));",
+                  "pm.test('Received PERFORMANCE_REVIEWED notification',()=>pm.expect(types).to.include('PERFORMANCE_REVIEWED'));",
+                  "setVar('notificationId',String(json[0].id));",
+                  "console.log('[NOTIFY] firstNotificationId='+json[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "{{workerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Worker marks a notification as read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mark-as-read returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Notification is now read',()=>pm.expect(pm.response.json().isRead).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "{{notificationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: employer cannot read the worker's inbox",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cross-user inbox access rejected (403)',()=>pm.expect(pm.response.code).to.eql(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "{{workerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Inbox reflects the read state",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "const target=String(pm.collectionVariables.get('notificationId'));",
+                  "const notif=json.find(n=>String(n.id)===target);",
+                  "pm.test('Previously marked notification is still read',()=>{pm.expect(notif).to.be.an('object');pm.expect(notif.isRead).to.eql(true);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "{{workerId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Admin Dashboard",
+      "description": "The ADMIN verifies the dashboard summary and analytics reflect everything done above: 3+ users, the assigned job, a non-zero monthly attendance rate and a non-zero average performance rating. Non-ADMIN roles are blocked.",
+      "item": [
+        {
+          "name": "Dashboard summary reflects the lifecycle data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d=pm.response.json().data;",
+                  "pm.test('Summary returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('At least 3 users registered (worker+employer+admin)',()=>pm.expect(d.totalUsers).to.be.at.least(3));",
+                  "pm.test('At least one active job',()=>pm.expect(d.activeJobs).to.be.at.least(1));",
+                  "pm.test('Monthly attendance rate is present and > 0',()=>{pm.expect(d.monthlyAttendanceRate).to.not.eql(null);pm.expect(d.monthlyAttendanceRate).to.be.above(0);});",
+                  "pm.test('Average performance rating is present and > 0',()=>{pm.expect(d.averagePerformanceRating).to.not.eql(null);pm.expect(d.averagePerformanceRating).to.be.above(0);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "dashboard", "summary"]
+            }
+          }
+        },
+        {
+          "name": "Dashboard analytics reflect all lifecycle steps",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d=pm.response.json().data;",
+                  "pm.test('Analytics return 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('usersByRole counts at least 1 WORKER and 1 EMPLOYER',()=>{pm.expect(d.usersByRole.WORKER).to.be.at.least(1);pm.expect(d.usersByRole.EMPLOYER).to.be.at.least(1);});",
+                  "pm.test('jobsByStatus shows the job as ASSIGNED',()=>pm.expect(d.jobsByStatus.ASSIGNED).to.be.at.least(1));",
+                  "pm.test('Monthly attendance rate > 0',()=>pm.expect(d.monthlyAttendanceRate).to.be.above(0));",
+                  "pm.test('Average performance rating > 0',()=>pm.expect(d.averagePerformanceRating).to.be.above(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "dashboard", "analytics"]
+            }
+          }
+        },
+        {
+          "name": "Admin user listing contains the worker",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "pm.test('User listing returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Worker appears in the user list',()=>{pm.expect(json.data).to.be.an('array');const w=json.data.find(u=>u.email===pm.variables.get('workerEmail'));pm.expect(w).to.be.an('object');});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: employer cannot access admin analytics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Non-admin analytics access rejected (403)',()=>pm.expect(pm.response.code).to.eql(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/dashboard/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "dashboard", "analytics"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "noauth"
+  }
+}
