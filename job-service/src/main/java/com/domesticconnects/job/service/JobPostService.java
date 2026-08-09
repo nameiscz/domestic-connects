@@ -6,6 +6,7 @@ import com.domesticconnects.job.dto.JobPostRequest;
 import com.domesticconnects.job.dto.JobPostResponse;
 import com.domesticconnects.job.entity.JobPost;
 import com.domesticconnects.job.entity.JobStatus;
+import com.domesticconnects.job.exception.InvalidJobStateException;
 import com.domesticconnects.job.exception.JobStatusException;
 import com.domesticconnects.job.exception.ResourceNotFoundException;
 import com.domesticconnects.job.repository.JobPostRepository;
@@ -105,6 +106,11 @@ public class JobPostService {
 
     /**
      * Assigns a worker to a job post, moving its status to {@code ASSIGNED}.
+     * Only {@code OPEN} posts can be assigned; assigning an already-assigned
+     * or closed post is rejected with {@link InvalidJobStateException}. The
+     * {@code @Version} field on {@link JobPost} additionally guarantees that
+     * two concurrent assignment attempts cannot both succeed: the loser fails
+     * at the persistence layer with an optimistic-lock conflict.
      */
     @Transactional
     @Auditable(action = "ASSIGN", entity = "JobPost", idParam = 0,
@@ -116,8 +122,8 @@ public class JobPostService {
     public JobPostResponse assignWorker(Long id, Long workerId) {
         JobPost jobPost = findActiveJobPost(id);
 
-        if (jobPost.getStatus() == JobStatus.CLOSED) {
-            throw new JobStatusException("Cannot assign a worker to a closed job post");
+        if (jobPost.getStatus() != JobStatus.OPEN) {
+            throw new InvalidJobStateException(id, jobPost.getStatus());
         }
 
         jobPost.setStatus(JobStatus.ASSIGNED);

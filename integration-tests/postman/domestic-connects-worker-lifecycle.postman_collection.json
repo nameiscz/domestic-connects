@@ -25,6 +25,7 @@
     { "key": "employerId", "value": "" },
     { "key": "adminId", "value": "" },
     { "key": "jobId", "value": "" },
+    { "key": "jobId2", "value": "" },
     { "key": "reviewId", "value": "" },
     { "key": "notificationId", "value": "" },
     { "key": "workerToken", "value": "" },
@@ -578,7 +579,7 @@
     },
     {
       "name": "2. Job Posting & Assignment",
-      "description": "The EMPLOYER posts a job with a daily wage, verifies it is listed, then assigns the WORKER to it. Negative cases prove WORKERs cannot create jobs or assign workers.",
+      "description": "The EMPLOYER posts a job with a daily wage, verifies it is listed, then assigns the WORKER to it. A WORKER may apply (self-assign), but negative cases prove WORKERs cannot create jobs or assign other workers.",
       "item": [
         {
           "name": "Employer posts a job",
@@ -643,6 +644,34 @@
           }
         },
         {
+          "name": "Employer lists available workers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "pm.test('Worker listing returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Listing is an array of WORKERs containing the bootstrapped worker',()=>{pm.expect(json.data).to.be.an('array');const w=json.data.find(u=>String(u.id)===pm.variables.get('workerId'));pm.expect(w).to.be.an('object');pm.expect(w.role).to.eql('WORKER');pm.expect(w.verified).to.eql(true);});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/workers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "workers"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Employer assigns worker to the job",
           "event": [
             {
@@ -670,14 +699,15 @@
           }
         },
         {
-          "name": "NEGATIVE: worker cannot assign workers",
+          "name": "NEGATIVE: worker cannot assign another worker",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Worker assignment attempt rejected (403)',()=>pm.expect(pm.response.code).to.eql(403));"
+                  "pm.test('Worker assigning a different user is rejected (403)',()=>pm.expect(pm.response.code).to.eql(403));",
+                  "pm.test('Message mentions workers may only apply for themselves',()=>pm.expect(pm.response.json().message).to.include('only apply'));"
                 ]
               }
             }
@@ -688,11 +718,75 @@
               { "key": "Authorization", "value": "Bearer {{workerToken}}" }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/assign/{{workerId}}",
+              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/assign/{{adminId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "jobs", "{{jobId}}", "assign", "{{workerId}}"]
+              "path": ["api", "jobs", "{{jobId}}", "assign", "{{adminId}}"]
             }
-          }
+          },
+          "response": []
+        },
+        {
+          "name": "Employer posts a second job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
+                  "const json=pm.response.json();",
+                  "pm.test('Second job creation returns 201',()=>pm.expect(pm.response.code).to.eql(201));",
+                  "setVar('jobId2',String(json.id));",
+                  "console.log('[JOB] jobId2='+json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Gardener & Cleaner - {{month}}/{{year}}\",\n  \"description\": \"Weekly gardening and outdoor cleaning for a private home.\",\n  \"employerId\": \"{{employerId}}\",\n  \"wagePerDay\": 400.0,\n  \"location\": \"Mysuru, Karnataka\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Worker applies (self-assigns) to the second job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "pm.test('Worker self-assignment returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Job status moves to ASSIGNED',()=>pm.expect(json.status).to.eql('ASSIGNED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/{{jobId2}}/assign/{{workerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "jobs", "{{jobId2}}", "assign", "{{workerId}}"]
+            }
+          },
+          "response": []
         },
         {
           "name": "NEGATIVE: worker cannot create a job post",
@@ -728,7 +822,7 @@
     },
     {
       "name": "3. Attendance",
-      "description": "The EMPLOYER marks attendance for the worker over several days of the current month (3 PRESENT, 1 HALF_DAY, 1 ABSENT) and verifies the monthly report and summary. Duplicate marking is rejected with 409.",
+      "description": "The EMPLOYER marks attendance for the worker over several days of the current month (3 PRESENT, 1 HALF_DAY, 1 ABSENT) and verifies the monthly report and summary. Duplicate marking is rejected with 409. The WORKER can read their own monthly report (self-service); reading another user's report is rejected with 403.",
       "item": [
         {
           "name": "Mark attendance - day 1 (PRESENT)",
@@ -944,6 +1038,69 @@
               "raw": "{{baseUrl}}/api/attendance/worker/{{workerId}}?month={{month}}&year={{year}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "attendance", "worker", "{{workerId}}"],
+              "query": [
+                { "key": "month", "value": "{{month}}" },
+                { "key": "year", "value": "{{year}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Worker views their own attendance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json=pm.response.json();",
+                  "pm.test('Worker self-service report returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Report is for the worker',()=>pm.expect(String(json.workerId)).to.eql(pm.variables.get('workerId')));",
+                  "pm.test('Report contains all 5 records',()=>pm.expect(json.records.length).to.eql(5));",
+                  "pm.test('Summary: 3 present days',()=>pm.expect(json.summary.presentDays).to.eql(3));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/worker/{{workerId}}?month={{month}}&year={{year}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "worker", "{{workerId}}"],
+              "query": [
+                { "key": "month", "value": "{{month}}" },
+                { "key": "year", "value": "{{year}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: worker cannot view another worker's attendance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cross-worker attendance read rejected (403)',()=>pm.expect(pm.response.code).to.eql(403));",
+                  "pm.test('Message mentions self-service restriction',()=>pm.expect(pm.response.json().message).to.include('own attendance'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/worker/{{employerId}}?month={{month}}&year={{year}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "attendance", "worker", "{{employerId}}"],
               "query": [
                 { "key": "month", "value": "{{month}}" },
                 { "key": "year", "value": "{{year}}" }

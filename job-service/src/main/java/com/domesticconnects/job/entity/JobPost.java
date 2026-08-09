@@ -45,6 +45,18 @@ public class JobPost {
     @Builder.Default
     private boolean isDeleted = false;
 
+    /**
+     * Optimistic-lock version — managed by Hibernate, incremented on every
+     * update. Concurrent updates to the same row fail fast with an
+     * {@code ObjectOptimisticLockingFailureException} (mapped to HTTP 409)
+     * instead of silently overwriting each other. The setter is deliberately
+     * hidden so the lock version can only be touched by Hibernate.
+     */
+    @Version
+    @Column(name = "version")
+    @Setter(AccessLevel.NONE)
+    private Long version;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
