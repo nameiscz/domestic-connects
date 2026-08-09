@@ -46,6 +46,9 @@ public class SecurityConfig {
                         // direct Feign (no JWT). Authorisation is enforced inside
                         // the controller via the gateway-forwarded X-User-Role header.
                         .requestMatchers(HttpMethod.GET, "/auth/admin/users").permitAll()
+                        // Read-only worker listing for the employer assignment
+                        // picker; same header-based authorisation pattern.
+                        .requestMatchers(HttpMethod.GET, "/auth/workers").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

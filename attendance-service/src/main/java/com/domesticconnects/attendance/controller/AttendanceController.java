@@ -28,6 +28,7 @@ public class AttendanceController {
 
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_EMPLOYER = "EMPLOYER";
+    private static final String ROLE_WORKER = "WORKER";
 
     private final AttendanceService attendanceService;
 
@@ -46,7 +47,13 @@ public class AttendanceController {
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year,
             HttpServletRequest httpRequest) {
-        requireRole(httpRequest, ROLE_ADMIN, ROLE_EMPLOYER);
+        String role = extractUserRole(httpRequest);
+        if (ROLE_WORKER.equalsIgnoreCase(role)) {
+            // Workers are only ever allowed to view their own attendance.
+            requireSelfAccess(httpRequest, workerId);
+        } else {
+            requireRole(httpRequest, ROLE_ADMIN, ROLE_EMPLOYER);
+        }
         return ResponseEntity.ok(
                 attendanceService.getWorkerAttendance(workerId, month, year));
     }
@@ -75,6 +82,31 @@ public class AttendanceController {
         }
         throw new AccessDeniedException(
                 "Access denied: requires one of roles " + Arrays.toString(allowedRoles));
+    }
+
+    /**
+     * Verifies a WORKER caller is only accessing their own record. The gateway
+     * forwards the authenticated user's id as {@code X-User-Id} (stripping any
+     * client-supplied value first), so comparing it to the requested
+     * {@code workerId} is safe. Throws {@link AccessDeniedException} (HTTP 403)
+     * when the ids do not match.
+     */
+    private void requireSelfAccess(HttpServletRequest request, Long workerId) {
+        String userId = extractUserId(request);
+        if (!String.valueOf(workerId).equals(userId)) {
+            throw new AccessDeniedException(
+                    "Access denied: workers may only view their own attendance");
+        }
+    }
+
+    /**
+     * Reads the caller's user id. The gateway forwards it as {@code X-User-Id};
+     * a missing header yields an empty string so the caller is treated as
+     * unauthenticated.
+     */
+    private String extractUserId(HttpServletRequest request) {
+        String userId = request.getHeader("X-User-Id");
+        return userId == null ? "" : userId.trim();
     }
 
     /**

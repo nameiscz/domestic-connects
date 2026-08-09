@@ -6,7 +6,12 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
+import JobBrowse from './pages/worker/JobBrowse';
+import WorkerAttendance from './pages/worker/WorkerAttendance';
 import EmployerDashboard from './pages/employer/EmployerDashboard';
+import MyJobPosts from './pages/employer/MyJobPosts';
+import PostJob from './pages/employer/PostJob';
+import MarkAttendance from './pages/employer/MarkAttendance';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
 /** Redirects "/" to the signed-in user's dashboard (or /login). */
@@ -28,21 +33,29 @@ export default function App() {
 
           {/* Role-gated dashboards (nested routes render via <Outlet />) */}
           <Route
-            path="/worker/*"
+            path="/worker"
             element={
               <ProtectedRoute allowedRoles={['WORKER']}>
                 <WorkerDashboard />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route path="jobs" element={<JobBrowse />} />
+            <Route path="attendance" element={<WorkerAttendance />} />
+          </Route>
           <Route
-            path="/employer/*"
+            path="/employer"
             element={
               <ProtectedRoute allowedRoles={['EMPLOYER']}>
                 <EmployerDashboard />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route path="jobs" element={<MyJobPosts />} />
+            <Route path="jobs/new" element={<PostJob />} />
+            <Route path="jobs/edit/:id" element={<PostJob />} />
+            <Route path="attendance" element={<MarkAttendance />} />
+          </Route>
           <Route
             path="/admin/*"
             element={

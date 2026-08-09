@@ -28,6 +28,7 @@ public class JobPostController {
 
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_EMPLOYER = "EMPLOYER";
+    private static final String ROLE_WORKER = "WORKER";
 
     private final JobPostService jobPostService;
 
@@ -71,8 +72,37 @@ public class JobPostController {
     public ResponseEntity<JobPostResponse> assignWorker(@PathVariable Long id,
                                                         @PathVariable Long workerId,
                                                         HttpServletRequest httpRequest) {
-        requireRole(httpRequest, ROLE_EMPLOYER, ROLE_ADMIN);
+        requireRole(httpRequest, ROLE_WORKER, ROLE_EMPLOYER, ROLE_ADMIN);
+
+        // Employers and admins may assign any worker. A WORKER may only
+        // "apply" by assigning themselves — assigning other workers remains
+        // an employer/admin privilege.
+        if (extractUserRole(httpRequest).equalsIgnoreCase(ROLE_WORKER)) {
+            requireSelfAssignment(httpRequest, workerId);
+        }
+
         return ResponseEntity.ok(jobPostService.assignWorker(id, workerId));
+    }
+
+    /**
+     * Enforces that a WORKER may only assign themselves to a job (i.e. apply).
+     * The caller's id is read from the gateway-forwarded {@code X-User-Id}
+     * header, which the gateway derives from the validated JWT and strips from
+     * any client-supplied input, so it cannot be forged.
+     */
+    private void requireSelfAssignment(HttpServletRequest request, Long workerId) {
+        String userId = request.getHeader("X-User-Id");
+        if (userId == null || userId.isBlank()) {
+            throw new AccessDeniedException("Access denied: unable to verify worker identity");
+        }
+        try {
+            if (Long.parseLong(userId.trim()) != workerId.longValue()) {
+                throw new AccessDeniedException(
+                        "Access denied: workers may only apply to jobs for themselves");
+            }
+        } catch (NumberFormatException e) {
+            throw new AccessDeniedException("Access denied: unable to verify worker identity");
+        }
     }
 
     /**

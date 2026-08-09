@@ -175,6 +175,28 @@ public class AuthService {
     }
 
     /**
+     * Lists verified, active WORKER accounts — the pool an employer can
+     * assign to a job post. EMPLOYER/ADMIN only (enforced in the controller
+     * against the gateway-forwarded {@code X-User-Role} header).
+     */
+    public ApiResponse<List<AuthResponse.UserInfo>> getWorkers() {
+        List<AuthResponse.UserInfo> workers = userRepository.findByRole(Role.WORKER).stream()
+                .filter(User::isVerified)
+                .filter(User::isActive)
+                .map(user -> AuthResponse.UserInfo.builder()
+                        .id(user.getId())
+                        .name(user.getName())
+                        .email(user.getEmail())
+                        .role(user.getRole())
+                        .isVerified(user.isVerified())
+                        .isActive(user.isActive())
+                        .build())
+                .toList();
+
+        return ApiResponse.success("Workers fetched successfully", workers);
+    }
+
+    /**
      * Activates a user account (admin function).
      */
     @Transactional
