@@ -98,8 +98,10 @@ jobs:
           context: .
           file: ${{ matrix.service }}/Dockerfile
           push: ${{ github.ref == 'refs/heads/staging' }}
+          # Fall back to the repo owner so tags stay valid when the
+          # DOCKERHUB_USERNAME secret is not configured (e.g. dev builds).
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service }}:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME || github.repository_owner }}/${{ matrix.service }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME || github.repository_owner }}/${{ matrix.service }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
