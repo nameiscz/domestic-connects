@@ -13,6 +13,7 @@ import MyJobPosts from './pages/employer/MyJobPosts';
 import PostJob from './pages/employer/PostJob';
 import MarkAttendance from './pages/employer/MarkAttendance';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import PlaceholderPage from './components/PlaceholderPage';
 
 /** Redirects "/" to the signed-in user's dashboard (or /login). */
 function HomeRedirect() {
@@ -42,6 +43,34 @@ export default function App() {
           >
             <Route path="jobs" element={<JobBrowse />} />
             <Route path="attendance" element={<WorkerAttendance />} />
+            {/* Placeholder pages for navbar sections without a real page yet. */}
+            <Route
+              path="salary-slips"
+              element={
+                <PlaceholderPage
+                  title="My Salary Slips"
+                  description="Downloadable monthly salary slips will appear here."
+                />
+              }
+            />
+            <Route
+              path="performance"
+              element={
+                <PlaceholderPage
+                  title="My Performance"
+                  description="Performance reviews from your employers will appear here."
+                />
+              }
+            />
+            <Route
+              path="notifications"
+              element={
+                <PlaceholderPage
+                  title="Notifications"
+                  description="Job updates and alerts will appear here."
+                />
+              }
+            />
           </Route>
           <Route
             path="/employer"
