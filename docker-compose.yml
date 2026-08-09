@@ -268,7 +268,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      # Producer of `job-assigned` — wait for topics to exist.
+      # Intended producer of `job-assigned` (no KafkaTemplate wired yet) —
+      # wait for topics to exist so publishing works the moment it lands.
       kafka-init:
         condition: service_completed_successfully
 
@@ -315,7 +316,8 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
-      # Producer of `salary-slip-generated` — wait for topics to exist.
+      # Intended producer of `salary-slip-generated` (no KafkaTemplate wired yet) —
+      # wait for topics to exist so publishing works the moment it lands.
       kafka-init:
         condition: service_completed_successfully
 
@@ -340,7 +342,8 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
-      # Producer of `performance-reviewed` — wait for topics to exist.
+      # Intended producer of `performance-reviewed` (no KafkaTemplate wired yet) —
+      # wait for topics to exist so publishing works the moment it lands.
       kafka-init:
         condition: service_completed_successfully
 

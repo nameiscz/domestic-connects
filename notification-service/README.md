@@ -43,4 +43,6 @@ mvn spring-boot:run -pl notification-service
 ```
 
 Requires config-server (port 8888), eureka-server (8761), MySQL
-(`domestic_connects_notifications`) and Kafka (localhost:9092) to be up.
+(`domestic_connects_notifications` per the config-repo default; `notification_db`
+under Docker) and Kafka (localhost:9092 locally; `localhost:29092` on the Docker
+host) to be up.

@@ -1,5 +1,9 @@
 # Configuration for notification-service
 # Served by config-server on port 8888.
+#
+# Local (mvn spring-boot:run) runs use the legacy `domestic_connects_*` schemas
+# on localhost:3306. The Docker stack overrides the datasource to `<service>_db`
+# (see docker-compose.yml and docker/mysql/init/01-create-databases.sql).
 
 server:
   port: 8087
