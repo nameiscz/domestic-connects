@@ -43,7 +43,7 @@ function SummaryStat({ label, value, variant }) {
  * Shared renderer for a {@code WorkerAttendanceReport}: the monthly summary
  * cards and the records table (or an empty state when there are no records).
  * Used by the employer's MarkAttendance page and the worker's own
- * WorkerAttendance page.
+ * MyAttendance page.
  */
 export default function AttendanceReportView({ report, emptyMessage }) {
   const records = report?.records ?? [];

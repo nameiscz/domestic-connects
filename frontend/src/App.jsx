@@ -7,12 +7,13 @@ import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import JobBrowse from './pages/worker/JobBrowse';
-import WorkerAttendance from './pages/worker/WorkerAttendance';
+import MyAttendance from './pages/worker/MyAttendance';
 import EmployerDashboard from './pages/employer/EmployerDashboard';
 import MyJobPosts from './pages/employer/MyJobPosts';
 import PostJob from './pages/employer/PostJob';
 import MarkAttendance from './pages/employer/MarkAttendance';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminAttendance from './pages/admin/AdminAttendance';
 import PlaceholderPage from './components/PlaceholderPage';
 
 /** Redirects "/" to the signed-in user's dashboard (or /login). */
@@ -42,7 +43,7 @@ export default function App() {
             }
           >
             <Route path="jobs" element={<JobBrowse />} />
-            <Route path="attendance" element={<WorkerAttendance />} />
+            <Route path="attendance" element={<MyAttendance />} />
             {/* Placeholder pages for navbar sections without a real page yet. */}
             <Route
               path="salary-slips"
@@ -86,13 +87,17 @@ export default function App() {
             <Route path="attendance" element={<MarkAttendance />} />
           </Route>
           <Route
-            path="/admin/*"
+            path="/admin"
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <AdminDashboard />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route path="attendance" element={<AdminAttendance />} />
+            {/* Other /admin/* URLs keep showing the admin workspace overview. */}
+            <Route path="*" element={null} />
+          </Route>
 
           {/* Fallback */}
           <Route path="*" element={<NotFound />} />
