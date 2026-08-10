@@ -12,11 +12,11 @@ const currentYear = () => new Date().getFullYear();
 const YEARS = [currentYear() - 1, currentYear(), currentYear() + 1];
 
 /**
- * WorkerAttendance — a read-only view of the logged-in worker's own monthly
+ * MyAttendance — a read-only view of the logged-in worker's own monthly
  * attendance (GET /api/attendance/worker/{id}?month=&year=). The backend only
  * permits WORKER callers to query their own id, so no picker is needed here.
  */
-export default function WorkerAttendance() {
+export default function MyAttendance() {
   const { currentUser } = useAuth();
   const workerId = currentUser?.id;
 

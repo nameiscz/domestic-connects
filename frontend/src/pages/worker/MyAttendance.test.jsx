@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import WorkerAttendance from './WorkerAttendance';
+import MyAttendance from './MyAttendance';
 
 // Mock auth context and axios instance so tests control both directly.
 const { useAuth } = vi.hoisted(() => ({ useAuth: vi.fn() }));
@@ -47,9 +47,9 @@ const reportUrlFor = (workerId, month, year) =>
 const reportCalls = () =>
   axiosInstance.get.mock.calls.filter(([url]) => url.includes('/api/attendance/worker/'));
 
-const renderPage = () => render(<WorkerAttendance />);
+const renderPage = () => render(<MyAttendance />);
 
-describe('WorkerAttendance', () => {
+describe('MyAttendance', () => {
   beforeEach(() => {
     useAuth.mockReturnValue({ currentUser: CURRENT_USER });
     axiosInstance.get.mockReset();

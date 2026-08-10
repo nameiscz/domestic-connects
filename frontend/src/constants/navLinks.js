@@ -16,6 +16,7 @@ export const NAV_LINKS = {
   ADMIN: [
     { to: '/admin/users', label: 'Users' },
     { to: '/admin/jobs', label: 'Jobs' },
+    { to: '/admin/attendance', label: 'Attendance' },
     { to: '/admin/analytics', label: 'Analytics' },
     { to: '/admin/audit-logs', label: 'Audit Logs' },
   ],
