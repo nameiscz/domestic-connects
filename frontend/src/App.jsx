@@ -4,16 +4,23 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ROLE_HOME } from './constants/roles';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import NotFound from './pages/NotFound';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import JobBrowse from './pages/worker/JobBrowse';
 import MyAttendance from './pages/worker/MyAttendance';
+import MySalarySlips from './pages/worker/MySalarySlips';
+import MyPerformance from './pages/worker/MyPerformance';
+import Notifications from './pages/worker/Notifications';
 import EmployerDashboard from './pages/employer/EmployerDashboard';
 import MyJobPosts from './pages/employer/MyJobPosts';
 import PostJob from './pages/employer/PostJob';
 import MarkAttendance from './pages/employer/MarkAttendance';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminAttendance from './pages/admin/AdminAttendance';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminJobs from './pages/admin/AdminJobs';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
 import PlaceholderPage from './components/PlaceholderPage';
 
 /** Redirects "/" to the signed-in user's dashboard (or /login). */
@@ -32,6 +39,7 @@ export default function App() {
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify" element={<VerifyEmail />} />
 
           {/* Role-gated dashboards (nested routes render via <Outlet />) */}
           <Route
@@ -44,34 +52,9 @@ export default function App() {
           >
             <Route path="jobs" element={<JobBrowse />} />
             <Route path="attendance" element={<MyAttendance />} />
-            {/* Placeholder pages for navbar sections without a real page yet. */}
-            <Route
-              path="salary-slips"
-              element={
-                <PlaceholderPage
-                  title="My Salary Slips"
-                  description="Downloadable monthly salary slips will appear here."
-                />
-              }
-            />
-            <Route
-              path="performance"
-              element={
-                <PlaceholderPage
-                  title="My Performance"
-                  description="Performance reviews from your employers will appear here."
-                />
-              }
-            />
-            <Route
-              path="notifications"
-              element={
-                <PlaceholderPage
-                  title="Notifications"
-                  description="Job updates and alerts will appear here."
-                />
-              }
-            />
+            <Route path="salary-slips" element={<MySalarySlips />} />
+            <Route path="performance" element={<MyPerformance />} />
+            <Route path="notifications" element={<Notifications />} />
           </Route>
           <Route
             path="/employer"
@@ -94,7 +77,19 @@ export default function App() {
               </ProtectedRoute>
             }
           >
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="jobs" element={<AdminJobs />} />
             <Route path="attendance" element={<AdminAttendance />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route
+              path="audit-logs"
+              element={
+                <PlaceholderPage
+                  title="Audit Logs"
+                  description="Platform-wide audit trails will appear here once the audit-log view is built."
+                />
+              }
+            />
             {/* Other /admin/* URLs keep showing the admin workspace overview. */}
             <Route path="*" element={null} />
           </Route>

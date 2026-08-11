@@ -64,14 +64,16 @@ The runner performs three phases automatically:
 On success you see `SUCCESS: full worker lifecycle covered end-to-end.` and a
 green newman summary. Re-running is safe: every run uses fresh unique emails.
 
-## Why the helper scripts exist (two platform gaps)
+## Why the helper scripts exist (the remaining gap)
 
 The suite stays faithful to what the platform actually does — and works around
-two gaps that would otherwise block an end-to-end run:
+the one gap that would otherwise block an end-to-end run:
 
-1. **No mailer → verification tokens live only in MySQL.** `register` stores a
-   random token in the `users` table and there is no email service to deliver
-   it. `fetch-verification-tokens.sh` reads it straight from the auth DB:
+1. **No mailer configured by default → verification tokens live only in
+   MySQL.** `register` stores a random token in the `users` table; without a
+   `RESEND_API_KEY` the verification link is only logged by auth-service (and
+   there is no email service to deliver it). `fetch-verification-tokens.sh`
+   reads it straight from the auth DB:
 
    ```bash
    # machine mode (used by run-newman.sh)
@@ -83,19 +85,20 @@ two gaps that would otherwise block an end-to-end run:
      --emails worker.1752@it.domesticconnects.local,employer.1752@it.domesticconnects.local,admin.1752@it.domesticconnects.local
    ```
 
-2. **No notification producers yet.** job/payroll/performance services are
-   wired in docker-compose as producers of `job-assigned`,
-   `salary-slip-generated` and `performance-reviewed`, but no `KafkaTemplate`
-   code exists yet. `publish-notification-events.sh` publishes the exact JSON
-   payloads those producers would send, so the consumer + inbox flow is tested
-   end-to-end:
+   Set `RESEND_API_KEY` on the auth-service (docker-compose) to send real
+   verification emails instead.
+
+2. **Notifications are now event-driven for real.** job-service,
+   payroll-service and performance-service publish `job-assigned`,
+   `salary-slip-generated` and `performance-reviewed` events through their own
+   `KafkaTemplate`s (best-effort — a broker outage never fails the business
+   operation). Folder `6. Notifications` therefore gets its events from the
+   lifecycle steps themselves. `publish-notification-events.sh` remains as a
+   manual fallback for testing the inbox without triggering the full flow:
 
    ```bash
    ./scripts/publish-notification-events.sh 42 7 "" 08 2026   # workerId jobId reviewId month year
    ```
-
-When the real producers are implemented, the notification step needs no
-changes — the events will arrive on their own and the same assertions hold.
 
 ## Running interactively in Postman
 

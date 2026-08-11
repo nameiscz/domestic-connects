@@ -30,6 +30,18 @@ jwt:
   access-token-expiration: 900000       # 15 minutes in milliseconds
   refresh-token-expiration: 604800000   # 7 days in milliseconds
 
+# --------------------------------------------------------------------------
+# Email verification (Resend). Without RESEND_API_KEY the verification link
+# is logged instead of emailed, so local/dev flows still complete.
+# --------------------------------------------------------------------------
+app:
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:3000}
+
+mail:
+  resend:
+    api-key: ${RESEND_API_KEY:}
+    from: ${MAIL_FROM:Domestic Connects <onboarding@resend.dev>}
+
 eureka:
   instance:
     prefer-ip-address: true

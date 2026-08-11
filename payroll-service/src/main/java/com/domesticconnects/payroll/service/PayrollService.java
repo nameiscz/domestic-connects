@@ -42,6 +42,7 @@ public class PayrollService {
     private final JobServiceClient jobServiceClient;
     private final SalaryRecordRepository salaryRecordRepository;
     private final SalarySlipPdfGenerator salarySlipPdfGenerator;
+    private final NotificationPublisher notificationPublisher;
 
     /**
      * Generates (and persists) the monthly salary slip for a worker.
@@ -97,6 +98,9 @@ public class PayrollService {
                 .grossSalary(grossSalary)
                 .build();
         salaryRecordRepository.save(record);
+        // Best-effort notification — never fails slip generation. Fires for both
+        // the single-slip and the batch flow (which calls this method per worker).
+        notificationPublisher.publishSlipGenerated(workerId, record.getId(), month, year);
 
         byte[] pdfBytes = salarySlipPdfGenerator.generate(record);
 

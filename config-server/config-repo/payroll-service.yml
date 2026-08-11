@@ -24,6 +24,16 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+  # Kafka producer for the `salary-slip-generated` notification topic
+  # (best-effort publishing — slip generation never fails if the broker is down).
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        # Consumer decodes with type headers disabled — keep the wire payload lean.
+        spring.json.add.type.headers: false
 
 # --------------------------------------------------------------------------
 # Payroll-specific settings
