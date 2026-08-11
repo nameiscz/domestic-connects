@@ -234,6 +234,10 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      # Optional: enables real verification emails via Resend. Unset → the
+      # verification link is logged by auth-service (dev fallback).
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      APP_FRONTEND_URL: ${APP_FRONTEND_URL:-http://localhost:3000}
     ports:
       - "8081:8081"
     depends_on:
@@ -257,6 +261,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
       SPRING_DATA_REDIS_HOST: redis
+      # Producer of `job-assigned` — broker is reachable in-network as kafka:9092.
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8082:8082"
     depends_on:
@@ -268,8 +274,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      # Intended producer of `job-assigned` (no KafkaTemplate wired yet) —
-      # wait for topics to exist so publishing works the moment it lands.
+      # Producer of `job-assigned` — wait for topics to exist before publishing.
       kafka-init:
         condition: service_completed_successfully
 
@@ -307,6 +312,8 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      # Producer of `salary-slip-generated` — broker is reachable in-network as kafka:9092.
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8084:8084"
     depends_on:
@@ -316,8 +323,7 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
-      # Intended producer of `salary-slip-generated` (no KafkaTemplate wired yet) —
-      # wait for topics to exist so publishing works the moment it lands.
+      # Producer of `salary-slip-generated` — wait for topics to exist before publishing.
       kafka-init:
         condition: service_completed_successfully
 
@@ -333,6 +339,8 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      # Producer of `performance-reviewed` — broker is reachable in-network as kafka:9092.
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8085:8085"
     depends_on:
@@ -342,8 +350,7 @@ services:
         condition: service_healthy
       mysql:
         condition: service_healthy
-      # Intended producer of `performance-reviewed` (no KafkaTemplate wired yet) —
-      # wait for topics to exist so publishing works the moment it lands.
+      # Producer of `performance-reviewed` — wait for topics to exist before publishing.
       kafka-init:
         condition: service_completed_successfully
 

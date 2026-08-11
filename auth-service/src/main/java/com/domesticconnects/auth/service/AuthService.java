@@ -32,6 +32,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    private final VerificationMailer verificationMailer;
 
     @Value("${jwt.access-token-expiration}")
     private long accessTokenExpiration;
@@ -57,6 +58,10 @@ public class AuthService {
                 .build();
 
         user = userRepository.save(user);
+
+        // Best-effort: sends the verification link (or logs it when no mailer
+        // is configured). Never fails registration.
+        verificationMailer.sendVerificationEmail(user.getEmail(), user.getVerificationToken());
 
         log.info("User registered successfully: {} with role {}", user.getEmail(), user.getRole());
 

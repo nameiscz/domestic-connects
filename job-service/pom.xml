@@ -38,6 +38,12 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <!-- Kafka: publishes job-assigned notification events for notification-service -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
         <!-- Spring Data Redis: @Cacheable / @CacheEvict backing store -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

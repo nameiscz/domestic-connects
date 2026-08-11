@@ -31,6 +31,7 @@ public class PerformanceReviewService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final PerformanceReviewRepository performanceReviewRepository;
+    private final NotificationPublisher notificationPublisher;
 
     /**
      * Persists a new performance review. The rating is re-validated in the
@@ -50,6 +51,8 @@ public class PerformanceReviewService {
                 .build();
 
         review = performanceReviewRepository.save(review);
+        // Best-effort notification — never fails the review submission.
+        notificationPublisher.publishReviewSubmitted(review.getWorkerId(), review.getId());
 
         log.info("Performance review submitted for worker {} with rating {} by {}",
                 review.getWorkerId(), review.getRating(), review.getReviewedBy());

@@ -29,6 +29,7 @@ public class JobPostService {
     private static final Logger log = LoggerFactory.getLogger(JobPostService.class);
 
     private final JobPostRepository jobPostRepository;
+    private final NotificationPublisher notificationPublisher;
 
     @Transactional
     @Auditable(action = "CREATE", entity = "JobPost", newValueParam = 0)
@@ -129,6 +130,8 @@ public class JobPostService {
         jobPost.setStatus(JobStatus.ASSIGNED);
 
         log.info("Worker {} assigned to job post {}", workerId, id);
+        // Best-effort notification — never fails the assignment.
+        notificationPublisher.publishJobAssigned(workerId, id, jobPost.getTitle());
         return toResponse(jobPost);
     }
 

@@ -48,6 +48,9 @@ class AuthServiceTest {
     @Mock
     private JwtUtils jwtUtils;
 
+    @Mock
+    private VerificationMailer verificationMailer;
+
     private AuthService authService;
 
     @Captor
@@ -55,7 +58,8 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, authenticationManager, jwtUtils);
+        authService = new AuthService(userRepository, passwordEncoder, authenticationManager,
+                jwtUtils, verificationMailer);
         ReflectionTestUtils.setField(authService, "accessTokenExpiration", 900000L);
     }
 

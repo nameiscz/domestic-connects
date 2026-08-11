@@ -124,9 +124,14 @@ export default function Register() {
                   Redirecting to the sign-in page
                   {countdown > 0 ? ` in ${countdown}s` : ''}…
                 </p>
-                <Link to="/login" className="btn btn-outline-primary btn-sm">
-                  Go to sign in
-                </Link>
+                <div className="d-flex flex-wrap gap-2">
+                  <Link to="/login" className="btn btn-outline-primary btn-sm">
+                    Go to sign in
+                  </Link>
+                  <Link to="/verify" className="btn btn-link btn-sm text-decoration-none">
+                    Didn&apos;t get the email? Verify manually
+                  </Link>
+                </div>
               </div>
             ) : (
               <>
