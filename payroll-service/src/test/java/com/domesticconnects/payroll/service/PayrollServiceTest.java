@@ -44,6 +44,9 @@ class PayrollServiceTest {
     @Mock
     private SalarySlipPdfGenerator salarySlipPdfGenerator;
 
+    @Mock
+    private NotificationPublisher notificationPublisher;
+
     @InjectMocks
     private PayrollService payrollService;
 

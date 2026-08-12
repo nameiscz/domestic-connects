@@ -39,6 +39,9 @@ class PerformanceReviewServiceTest {
     @Mock
     private PerformanceReviewRepository performanceReviewRepository;
 
+    @Mock
+    private NotificationPublisher notificationPublisher;
+
     @InjectMocks
     private PerformanceReviewService performanceReviewService;
 
