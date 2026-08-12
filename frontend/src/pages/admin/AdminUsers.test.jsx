@@ -12,7 +12,7 @@ vi.mock('../../api/axiosInstance', () => ({ default: axiosInstance }));
 const USERS = [
   { id: 1, name: 'Ana', email: 'ana@example.com', role: 'WORKER', verified: true, active: true },
   { id: 2, name: 'Bob', email: 'bob@example.com', role: 'EMPLOYER', verified: true, active: false },
-  { id: 3, name: 'Unverified', email: 'unv@example.com', role: 'WORKER', verified: false, active: true },
+  { id: 3, name: 'Carlos', email: 'carlos@example.com', role: 'WORKER', verified: false, active: true },
 ];
 
 const renderPage = () => render(<AdminUsers />);
