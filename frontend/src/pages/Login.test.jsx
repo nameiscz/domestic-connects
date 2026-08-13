@@ -152,6 +152,103 @@ describe('Login', () => {
     });
   });
 
+  describe('password visibility toggle', () => {
+    it('reveals and hides the password with the toggle button', async () => {
+      const user = userEvent.setup();
+      renderLogin();
+
+      const input = screen.getByLabelText('Password');
+      expect(input).toHaveAttribute('type', 'password');
+
+      await user.click(screen.getByRole('button', { name: /show password/i }));
+      expect(input).toHaveAttribute('type', 'text');
+      expect(screen.getByRole('button', { name: /hide password/i })).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      );
+
+      await user.click(screen.getByRole('button', { name: /hide password/i }));
+      expect(input).toHaveAttribute('type', 'password');
+      expect(screen.getByRole('button', { name: /show password/i })).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      );
+    });
+  });
+
+  describe('forgot password', () => {
+    it('switches to the reset form and sends a reset link for the entered email', async () => {
+      const forgotPassword = vi.fn().mockResolvedValue({});
+      useAuth.mockReturnValue({ login: vi.fn(), forgotPassword });
+      const user = userEvent.setup();
+      renderLogin();
+
+      await user.click(screen.getByRole('button', { name: /forgot password/i }));
+
+      expect(screen.getByTestId('forgot-password-form')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /reset your password/i })).toBeInTheDocument();
+      // The sign-in form is replaced, not hidden alongside the reset form.
+      expect(screen.queryByRole('button', { name: /^sign in$/i })).not.toBeInTheDocument();
+
+      await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
+      await user.click(screen.getByRole('button', { name: /send reset link/i }));
+
+      expect(forgotPassword).toHaveBeenCalledWith('ana@example.com');
+      expect(
+        await screen.findByText(/password-reset link is on its way/i)
+      ).toBeInTheDocument();
+    });
+
+    it('shows the generic success message even when the backend rejects the email', async () => {
+      // A backend rejection (e.g. unknown account) must not reveal whether an
+      // email has an account — the same success message is shown.
+      const forgotPassword = vi.fn().mockRejectedValue({
+        response: { data: { message: 'No account found' } },
+      });
+      useAuth.mockReturnValue({ login: vi.fn(), forgotPassword });
+      const user = userEvent.setup();
+      renderLogin();
+
+      await user.click(screen.getByRole('button', { name: /forgot password/i }));
+      await user.type(screen.getByLabelText('Email address'), 'ghost@example.com');
+      await user.click(screen.getByRole('button', { name: /send reset link/i }));
+
+      expect(
+        await screen.findByText(/password-reset link is on its way/i)
+      ).toBeInTheDocument();
+      expect(screen.queryByText('No account found')).not.toBeInTheDocument();
+    });
+
+    it('shows a network error when the server is unreachable', async () => {
+      const forgotPassword = vi.fn().mockRejectedValue(new Error('Network Error'));
+      useAuth.mockReturnValue({ login: vi.fn(), forgotPassword });
+      const user = userEvent.setup();
+      renderLogin();
+
+      await user.click(screen.getByRole('button', { name: /forgot password/i }));
+      await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
+      await user.click(screen.getByRole('button', { name: /send reset link/i }));
+
+      expect(
+        await screen.findByText(/Cannot reach the server/i)
+      ).toBeInTheDocument();
+    });
+
+    it('returns to the sign-in form via “Back to sign in”', async () => {
+      useAuth.mockReturnValue({ login: vi.fn(), forgotPassword: vi.fn() });
+      const user = userEvent.setup();
+      renderLogin();
+
+      await user.click(screen.getByRole('button', { name: /forgot password/i }));
+      expect(screen.getByTestId('forgot-password-form')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /back to sign in/i }));
+
+      expect(screen.getByRole('button', { name: /^sign in$/i })).toBeInTheDocument();
+      expect(screen.queryByTestId('forgot-password-form')).not.toBeInTheDocument();
+    });
+  });
+
   describe('server errors', () => {
     it('shows the backend message on failed login and stays on the page', async () => {
       const user = userEvent.setup();

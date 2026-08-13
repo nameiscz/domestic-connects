@@ -1,10 +1,8 @@
 /**
  * Shared Bootstrap stat card for dashboard overviews: an emoji, a headline
  * value, an uppercase label and an optional footnote. The optional `sample`
- * flag renders a small "sample" badge for placeholder values.
- *
- * Renders its own `.stat-card` hover-lift style so consumers don't duplicate
- * the scoped <style> block (the browser dedupes identical rules).
+ * flag renders a small "sample" badge for placeholder values. The hover-lift
+ * effect lives in src/index.css.
  */
 export default function StatCard({
   emoji,
@@ -33,11 +31,6 @@ export default function StatCard({
           {note && <div className="text-muted small mt-auto pt-1">{note}</div>}
         </div>
       </div>
-
-      <style>{`
-        .stat-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.10) !important; }
-      `}</style>
     </div>
   );
 }

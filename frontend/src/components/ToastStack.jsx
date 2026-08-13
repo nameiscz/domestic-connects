@@ -39,15 +39,6 @@ export default function ToastStack({ toasts, onDismiss = () => {} }) {
           </div>
         ))}
       </div>
-
-      {/* Slide-in animation for new toasts (CSS-only; no Bootstrap JS). */}
-      <style>{`
-        @keyframes toast-in {
-          from { opacity: 0; transform: translateX(1rem); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        .toast-enter { animation: toast-in 0.25s ease-out; }
-      `}</style>
     </>
   );
 }

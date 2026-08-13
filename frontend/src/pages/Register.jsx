@@ -17,6 +17,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'WORKER' });
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -106,6 +107,8 @@ export default function Register() {
                   value={form.name}
                   onChange={handleChange}
                   aria-invalid={Boolean(errors.name)}
+                  autoComplete="name"
+                  autoFocus
                 />
                 {errors.name && <div className="invalid-feedback">{errors.name}</div>}
               </div>
@@ -132,17 +135,28 @@ export default function Register() {
                 <label htmlFor="password" className="form-label">
                   Password
                 </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                  placeholder="At least 6 characters"
-                  value={form.password}
-                  onChange={handleChange}
-                  aria-invalid={Boolean(errors.password)}
-                  autoComplete="new-password"
-                />
+                <div className="input-group">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                    placeholder="At least 6 characters"
+                    value={form.password}
+                    onChange={handleChange}
+                    aria-invalid={Boolean(errors.password)}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                  >
+                    👁️
+                  </button>
+                </div>
                 {errors.password && (
                   <div className="invalid-feedback">{errors.password}</div>
                 )}

@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_HOME } from '../constants/roles';
 import { NAV_LINKS } from '../constants/navLinks';
+import useUnreadNotifications from '../hooks/useUnreadNotifications';
 
 /**
  * Shared navbar for the signed-in area. Renders the navigation links for the
@@ -28,6 +29,12 @@ export default function Navbar({ accent }) {
   const links = NAV_LINKS[role] || [];
   const homePath = ROLE_HOME[role] || '/login';
   const badgeAccent = accent || ROLE_ACCENT[role] || 'primary';
+
+  // The notification inbox is worker-only (the backend enforces it), so the
+  // bell + unread badge only render for WORKER sessions.
+  const unreadCount = useUnreadNotifications(
+    role === 'WORKER' ? currentUser?.id : null
+  );
 
   const handleLogout = () => {
     logout();
@@ -79,6 +86,28 @@ export default function Navbar({ accent }) {
           </ul>
 
           <ul className="navbar-nav ms-auto align-items-lg-center gap-lg-3">
+            {role === 'WORKER' && (
+              <li className="nav-item">
+                <Link
+                  to="/worker/notifications"
+                  className="nav-link position-relative d-inline-flex align-items-center py-0"
+                  aria-label={`Notifications, ${unreadCount} unread`}
+                  title="Notifications"
+                >
+                  <span className="fs-5 lh-1" aria-hidden="true">
+                    🔔
+                  </span>
+                  {unreadCount > 0 && (
+                    <span
+                      className="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle"
+                      data-testid="unread-notifications-badge"
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+              </li>
+            )}
             <li className="nav-item">
               <span className="navbar-text text-white-50 d-none d-md-inline">
                 Welcome, <strong className="text-white">{currentUser?.name}</strong>

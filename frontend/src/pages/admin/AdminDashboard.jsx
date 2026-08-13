@@ -4,14 +4,6 @@ import axiosInstance from '../../api/axiosInstance';
 import DashboardLayout from '../../components/DashboardLayout';
 import StatCard from '../../components/StatCard';
 
-// Quick links into the admin sections (mirrors the navbar).
-const SECTION_LINKS = [
-  { to: '/admin/users', emoji: '👥', label: 'Users', note: 'Manage accounts' },
-  { to: '/admin/jobs', emoji: '🗂️', label: 'Jobs', note: 'All postings' },
-  { to: '/admin/attendance', emoji: '📅', label: 'Attendance', note: 'Worker reports' },
-  { to: '/admin/analytics', emoji: '📊', label: 'Analytics', note: 'Platform KPIs' },
-];
-
 /**
  * AdminDashboard — live platform summary (GET /api/admin/dashboard/summary,
  * ApiResponse-wrapped) plus quick links to the admin sections. Downstream
@@ -80,7 +72,7 @@ export default function AdminDashboard() {
         </div>
       ) : (
         <>
-          <div className="row g-3 mb-4">
+          <div className="row g-3">
             <StatCard
               emoji="👥"
               label="Total users"
@@ -122,35 +114,6 @@ export default function AdminDashboard() {
               accent="warning"
             />
           </div>
-
-          {/* Quick links */}
-          <div className="row g-3">
-            {SECTION_LINKS.map((section) => (
-              <div className="col-sm-6 col-xl-3" key={section.to}>
-                <Link
-                  to={section.to}
-                  className="text-decoration-none"
-                >
-                  <div className="card shadow-sm admin-link h-100">
-                    <div className="card-body d-flex align-items-center gap-3">
-                      <span className="fs-3" role="img" aria-hidden="true">
-                        {section.emoji}
-                      </span>
-                      <div>
-                        <div className="fw-semibold text-dark">{section.label}</div>
-                        <div className="text-muted small">{section.note}</div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            ))}
-          </div>
-
-          <style>{`
-            .admin-link { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-            .admin-link:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.12) !important; }
-          `}</style>
         </>
       )}
     </DashboardLayout>

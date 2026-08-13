@@ -1,0 +1,60 @@
+/* ---------------------------------------------------------------------------
+ * App-wide custom styles (Bootstrap is imported separately in main.jsx).
+ * These rules previously lived in per-component <style> blocks; keeping them
+ * in one place avoids duplicated rules and keeps the effects easy to find.
+ * ------------------------------------------------------------------------- */
+
+/* StatCard hover-lift (dashboard overviews). */
+.stat-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Toast slide-in animation (ToastStack). */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.toast-enter {
+  animation: toast-in 0.25s ease-out;
+}
+
+/* Job card hover-lift + 3-line clamped description (JobBrowse). */
+.job-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.job-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12) !important;
+}
+.job-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: calc(1rem * 1.5 * 3);
+}
+
+/* Respect users who prefer reduced motion (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  .stat-card,
+  .job-card {
+    transition: none;
+  }
+  .stat-card:hover,
+  .job-card:hover {
+    transform: none;
+  }
+  .toast-enter {
+    animation: none;
+  }
+}

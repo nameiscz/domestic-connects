@@ -58,18 +58,19 @@ describe('AdminDashboard', () => {
     expect(screen.getByText('24 reviews across workers')).toBeInTheDocument();
   });
 
-  it('renders the section quick links with their destinations', async () => {
+  it('does not duplicate the navbar section links as quick-link cards', async () => {
     renderPage();
 
     await screen.findByText('Total users');
-    // Navbar duplicates some labels, so every matching link must point home.
+    // The navbar is the single source of section navigation: each section
+    // label appears exactly once, and the card-only helper texts are gone.
     for (const label of ['Users', 'Jobs', 'Attendance', 'Analytics']) {
       const links = screen.getAllByRole('link', { name: label });
-      expect(links.length).toBeGreaterThan(0);
+      expect(links).toHaveLength(1);
       expect(links[0]).toHaveAttribute('href', `/admin/${label.toLowerCase()}`);
     }
-    expect(screen.getByText('Manage accounts')).toBeInTheDocument();
-    expect(screen.getByText('Platform KPIs')).toBeInTheDocument();
+    expect(screen.queryByText('Manage accounts')).not.toBeInTheDocument();
+    expect(screen.queryByText('Platform KPIs')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /view analytics/i })).toHaveAttribute(
       'href',
       '/admin/analytics'

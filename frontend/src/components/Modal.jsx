@@ -40,7 +40,25 @@ export default function Modal({ onClose = () => {}, labelledBy, children }) {
     document.body.style.overflow = 'hidden';
 
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') onCloseRef.current();
+      if (e.key === 'Escape') {
+        onCloseRef.current();
+        return;
+      }
+      // Trap Tab so focus cannot leave the dialog (WAI-ARIA dialog pattern).
+      if (e.key !== 'Tab') return;
+      const focusables = shellRef.current?.querySelectorAll(
+        'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables || focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
 

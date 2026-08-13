@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import axiosInstance from '../api/axiosInstance';
 
 /**
@@ -81,6 +81,18 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
   };
 
+  // Forgot-password flow: the backend emails the user a one-time reset link
+  // (POST /api/auth/forgot-password) which points at the frontend
+  // /reset-password?token=… page; the new password is submitted together with
+  // that token (POST /api/auth/reset-password). Neither call creates a session.
+  const forgotPassword = useCallback(async (email) => {
+    await axiosInstance.post('/api/auth/forgot-password', { email });
+  }, []);
+
+  const resetPassword = useCallback(async (token, newPassword) => {
+    await axiosInstance.post('/api/auth/reset-password', { token, newPassword });
+  }, []);
+
   const value = useMemo(
     () => ({
       currentUser,
@@ -88,8 +100,10 @@ export function AuthProvider({ children }) {
       login,
       register,
       logout,
+      forgotPassword,
+      resetPassword,
     }),
-    [currentUser]
+    [currentUser, forgotPassword, resetPassword]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
