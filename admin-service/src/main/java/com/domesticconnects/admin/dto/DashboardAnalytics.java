@@ -11,7 +11,8 @@ import java.util.Map;
  *   <li>{@code usersByRole} — total users grouped by role (ADMIN/WORKER/EMPLOYER)</li>
  *   <li>{@code jobsByStatus} — jobs grouped by status (OPEN/ASSIGNED/CLOSED)</li>
  *   <li>{@code activeJobs} vs {@code inactiveJobs} — OPEN+ASSIGNED vs CLOSED</li>
- *   <li>{@code monthlyAttendanceRate} — current month, percentage (0-100)</li>
+ *   <li>{@code monthlyAttendanceRate} — attendance rate for the requested month
+ *       (current month when no {@code month} query param is sent), percentage (0-100)</li>
  *   <li>{@code averagePerformanceRating} — across workers (1-5)</li>
  * </ul>
  * Metrics are computed with circuit-breaker safe fallbacks: a failed

@@ -27,6 +27,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.nio.charset.StandardCharsets;
+import java.time.YearMonth;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,10 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -173,6 +177,25 @@ class AdminServiceTest {
         assertThat(analytics.getInactiveJobs()).isEqualTo(2);
         // Same aggregation as the summary: 3 + 5 reviews.
         assertThat(analytics.getTotalReviews()).isEqualTo(8);
+    }
+
+    @Test
+    @DisplayName("analytics aggregates the attendance rate for the requested month")
+    void analyticsUsesRequestedMonth() {
+        mockHappyPathDownstreams();
+
+        DashboardAnalytics analytics = adminService.getDashboardAnalytics(YearMonth.of(2026, 2));
+
+        // The requested month is forwarded to the attendance service.
+        verify(attendanceServiceClient).getWorkerIdsWithAttendance(eq(2), eq(2026));
+        verify(attendanceServiceClient, atLeastOnce())
+                .getWorkerAttendance(anyLong(), eq(2), eq(2026));
+        // (10 + 0.5*2 + 5) / (20 + 10) * 100 = 53.33% — same aggregation,
+        // just for February instead of the current month.
+        assertThat(analytics.getMonthlyAttendanceRate()).isEqualTo(53.33);
+        // Role/job breakdowns are current-state snapshots and stay populated.
+        assertThat(analytics.getUsersByRole()).containsEntry("WORKER", 2L);
+        assertThat(analytics.getActiveJobs()).isEqualTo(2);
     }
 
     @Test
