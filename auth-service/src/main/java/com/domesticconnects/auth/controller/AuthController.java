@@ -40,14 +40,8 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/verify/{token}")
-    public ResponseEntity<ApiResponse<Void>> verifyEmail(@PathVariable String token) {
-        ApiResponse<Void> response = authService.verifyEmail(token);
-        return ResponseEntity.ok(response);
-    }
-
     /**
-     * Lists verified, active workers for the employer job-assignment picker.
+     * Lists active workers for the employer job-assignment picker.
      * The path is permitted at the security layer (see {@code SecurityConfig})
      * so direct Feign callers work; EMPLOYER/ADMIN authorisation is enforced
      * here against the gateway-forwarded {@code X-User-Role} header, matching

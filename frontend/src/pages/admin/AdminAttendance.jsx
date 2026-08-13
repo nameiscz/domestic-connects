@@ -125,7 +125,7 @@ export default function AdminAttendance() {
                 </div>
               ) : workers.length === 0 ? (
                 <p className="text-muted small mb-0">
-                  No verified workers are available yet.
+                  No active workers are available yet.
                 </p>
               ) : (
                 <select

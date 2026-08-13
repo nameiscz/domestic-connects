@@ -412,7 +412,7 @@ export default function MyJobPosts() {
                 </div>
               ) : workers.length === 0 ? (
                 <p className="text-muted mb-0">
-                  No verified workers are available yet.
+                  No active workers are available yet.
                 </p>
               ) : (
                 <div>

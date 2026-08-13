@@ -39,7 +39,6 @@ public class SecurityConfig {
                                 "/auth/register",
                                 "/auth/login",
                                 "/auth/refresh",
-                                "/auth/verify/**",
                                 "/actuator/health"
                         ).permitAll()
                         // Read-only user listing consumed by admin-service over

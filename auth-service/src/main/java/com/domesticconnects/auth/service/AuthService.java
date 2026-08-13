@@ -20,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +31,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
-    private final VerificationMailer verificationMailer;
 
     @Value("${jwt.access-token-expiration}")
     private long accessTokenExpiration;
@@ -52,16 +50,10 @@ public class AuthService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
-                .isVerified(false)
                 .isActive(true)
-                .verificationToken(UUID.randomUUID().toString())
                 .build();
 
         user = userRepository.save(user);
-
-        // Best-effort: sends the verification link (or logs it when no mailer
-        // is configured). Never fails registration.
-        verificationMailer.sendVerificationEmail(user.getEmail(), user.getVerificationToken());
 
         log.info("User registered successfully: {} with role {}", user.getEmail(), user.getRole());
 
@@ -87,11 +79,6 @@ public class AuthService {
 
         if (!user.isActive()) {
             throw new IllegalArgumentException("Account is deactivated. Contact an administrator.");
-        }
-
-        if (!user.isVerified()) {
-            throw new IllegalArgumentException(
-                    "Please verify your email before logging in. Check your inbox for the verification link.");
         }
 
         String accessToken = jwtUtils.generateAccessToken(
@@ -139,28 +126,6 @@ public class AuthService {
     }
 
     /**
-     * Verifies a user's email using the verification token.
-     */
-    @Transactional
-    public ApiResponse<Void> verifyEmail(String token) {
-        User user = userRepository.findByVerificationToken(token)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Verification token", "token", token));
-
-        if (user.isVerified()) {
-            return ApiResponse.success("Email is already verified", null);
-        }
-
-        user.setVerified(true);
-        user.setVerificationToken(null);
-        userRepository.save(user);
-
-        log.info("Email verified for user: {}", user.getEmail());
-
-        return ApiResponse.success("Email verified successfully", null);
-    }
-
-    /**
      * Lists all registered users (admin function). Consumed by admin-service
      * for the dashboard user counts and users-by-role analytics.
      */
@@ -171,7 +136,6 @@ public class AuthService {
                         .name(user.getName())
                         .email(user.getEmail())
                         .role(user.getRole())
-                        .isVerified(user.isVerified())
                         .isActive(user.isActive())
                         .build())
                 .toList();
@@ -180,20 +144,18 @@ public class AuthService {
     }
 
     /**
-     * Lists verified, active WORKER accounts — the pool an employer can
-     * assign to a job post. EMPLOYER/ADMIN only (enforced in the controller
-     * against the gateway-forwarded {@code X-User-Role} header).
+     * Lists active WORKER accounts — the pool an employer can assign to a
+     * job post. EMPLOYER/ADMIN only (enforced in the controller against the
+     * gateway-forwarded {@code X-User-Role} header).
      */
     public ApiResponse<List<AuthResponse.UserInfo>> getWorkers() {
         List<AuthResponse.UserInfo> workers = userRepository.findByRole(Role.WORKER).stream()
-                .filter(User::isVerified)
                 .filter(User::isActive)
                 .map(user -> AuthResponse.UserInfo.builder()
                         .id(user.getId())
                         .name(user.getName())
                         .email(user.getEmail())
                         .role(user.getRole())
-                        .isVerified(user.isVerified())
                         .isActive(user.isActive())
                         .build())
                 .toList();
@@ -255,7 +217,6 @@ public class AuthService {
                         .name(user.getName())
                         .email(user.getEmail())
                         .role(user.getRole())
-                        .isVerified(user.isVerified())
                         .isActive(user.isActive())
                         .build())
                 .build();

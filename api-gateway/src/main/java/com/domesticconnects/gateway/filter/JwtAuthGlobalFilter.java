@@ -33,8 +33,8 @@ import java.nio.charset.StandardCharsets;
  * Any client-supplied {@code X-User-*} headers are stripped first so a caller
  * can never spoof their identity by sending forged headers directly.
  * <p>
- * Public endpoints (login, register, refresh, verify, health) are whitelisted
- * and skip validation entirely.
+ * Public endpoints (login, register, refresh, health) are whitelisted and
+ * skip validation entirely.
  */
 @Component
 public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
@@ -51,7 +51,6 @@ public class JwtAuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh",
-            "/api/auth/verify",
             "/actuator/health"
     };
 

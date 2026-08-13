@@ -16,7 +16,6 @@ const WORKERS = [
     name: 'Ana',
     email: 'ana@example.com',
     role: 'WORKER',
-    verified: true,
     active: true,
   },
   {
@@ -24,7 +23,6 @@ const WORKERS = [
     name: 'Ben',
     email: 'ben@example.com',
     role: 'WORKER',
-    verified: true,
     active: true,
   },
 ];
@@ -235,7 +233,7 @@ describe('AdminAttendance', () => {
     expect(screen.getByRole('option', { name: /ana \(ana@example\.com\)/i })).toBeInTheDocument();
   });
 
-  it('explains when no verified workers are available', async () => {
+  it('explains when no active workers are available', async () => {
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/auth/workers') {
         return Promise.resolve({ data: { data: [] } });
@@ -245,7 +243,7 @@ describe('AdminAttendance', () => {
     renderPage();
 
     expect(
-      await screen.findByText(/no verified workers are available yet/i)
+      await screen.findByText(/no active workers are available yet/i)
     ).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: /ana/i })).not.toBeInTheDocument();
   });

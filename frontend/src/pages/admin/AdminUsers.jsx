@@ -137,7 +137,6 @@ export default function AdminUsers() {
                   <th scope="col">Name</th>
                   <th scope="col">Email</th>
                   <th scope="col">Role</th>
-                  <th scope="col">Verified</th>
                   <th scope="col">Status</th>
                   <th scope="col" className="text-end">
                     Actions
@@ -159,13 +158,6 @@ export default function AdminUsers() {
                         </span>
                       </td>
                       <td>
-                        {user.verified ? (
-                          <span className="badge bg-success">Verified</span>
-                        ) : (
-                          <span className="badge bg-secondary">Unverified</span>
-                        )}
-                      </td>
-                      <td>
                         {user.active ? (
                           <span className="badge bg-success">Active</span>
                         ) : (
@@ -181,14 +173,8 @@ export default function AdminUsers() {
                               : 'btn-outline-success'
                           }`}
                           onClick={() => toggleActive(user)}
-                          disabled={Boolean(togglingId) || !user.verified}
-                          title={
-                            user.verified
-                              ? user.active
-                                ? 'Deactivate account'
-                                : 'Activate account'
-                              : 'Cannot manage an unverified account'
-                          }
+                          disabled={Boolean(togglingId)}
+                          title={user.active ? 'Deactivate account' : 'Activate account'}
                           data-testid={`toggle-${user.id}`}
                         >
                           {isToggling ? (

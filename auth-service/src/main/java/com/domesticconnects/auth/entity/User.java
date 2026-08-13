@@ -32,17 +32,10 @@ public class User {
 
     @Column(nullable = false)
     @Builder.Default
-    private boolean isVerified = false;
-
-    @Column(nullable = false)
-    @Builder.Default
     private boolean isActive = true;
 
     @Column(updatable = false)
     private LocalDateTime createdAt;
-
-    @Column
-    private String verificationToken;
 
     @PrePersist
     protected void onCreate() {

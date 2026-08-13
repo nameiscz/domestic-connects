@@ -9,9 +9,8 @@ import axiosInstance from '../api/axiosInstance';
  *
  * Exposes:
  *   - login(email, password)   → calls POST /api/auth/login, persists the session
- *   - register(...)            → calls POST /api/auth/register; does NOT create
- *                                a session (new accounts are unverified and
- *                                must confirm their email before logging in)
+ *   - register(...)            → calls POST /api/auth/register and creates a
+ *                                session immediately (no email verification)
  *   - logout()                 → clears the session
  *   - isAuthenticated          → convenience boolean
  */
@@ -71,10 +70,11 @@ export function AuthProvider({ children }) {
       password,
       role,
     });
-    // New accounts start unverified (backend blocks login until the email
-    // verification link is used), so no session is created here — the
-    // register page shows a success message and directs the user to /login.
-    return toCurrentUser(data);
+    // Accounts can sign in right away (no email verification), so a session
+    // is created immediately and the user lands on their dashboard.
+    const user = toCurrentUser(data);
+    setCurrentUser(user);
+    return user;
   };
 
   const logout = () => {

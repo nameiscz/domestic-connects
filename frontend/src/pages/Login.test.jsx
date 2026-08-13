@@ -157,17 +157,17 @@ describe('Login', () => {
       const user = userEvent.setup();
       const login = vi.fn().mockRejectedValue({
         response: {
-          data: { message: 'Please verify your email before logging in.' },
+          data: { message: 'Invalid email or password.' },
         },
       });
       useAuth.mockReturnValue({ login });
       renderLogin();
 
-      await typeCredentials(user, 'unverified@example.com');
+      await typeCredentials(user, 'wrong@example.com');
       await user.click(screen.getByRole('button', { name: /sign in/i }));
 
       expect(
-        await screen.findByText('Please verify your email before logging in.')
+        await screen.findByText('Invalid email or password.')
       ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /sign in/i })).toBeEnabled();
     });

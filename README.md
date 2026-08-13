@@ -51,12 +51,8 @@ Then use the API through the gateway: `http://localhost:8080/api/**`
 (e.g. `http://localhost:8080/api/notifications/1`). Kafka host tools reach the
 broker at `localhost:29092`; in-network services use `kafka:9092`.
 
-> **Email verification (optional):** registration always creates an
-> unverified account and login is blocked until the email is confirmed. The
-> verification link is logged by auth-service unless you set `RESEND_API_KEY`
-> (a [Resend](https://resend.com) API key) on the auth-service, which then
-> emails the link. Either way, the frontend `/verify` page (also linked from
-> the registration success screen) can verify a code manually.
+> Accounts are active immediately on registration (no email verification), and
+> the frontend signs the user in right away.
 
 > Running services outside Docker instead? Start MySQL + Kafka + Redis (Redis is
 > required by job-service and admin-service) with

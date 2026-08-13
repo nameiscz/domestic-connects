@@ -20,7 +20,6 @@ const WORKERS = [
     name: 'Ana',
     email: 'ana@example.com',
     role: 'WORKER',
-    verified: true,
     active: true,
   },
   {
@@ -28,7 +27,6 @@ const WORKERS = [
     name: 'Ben',
     email: 'ben@example.com',
     role: 'WORKER',
-    verified: true,
     active: true,
   },
 ];

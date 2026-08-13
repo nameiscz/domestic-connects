@@ -2,36 +2,102 @@
   "info": {
     "_postman_id": "b0d0f5c1-9a2e-4b3d-8c4e-5f6a7b8c9d0e",
     "name": "Domestic Connects - Worker Lifecycle (Integration)",
-    "description": "End-to-end integration suite for the Domestic Connects microservice platform. Exercises the full worker lifecycle through the API gateway (http://localhost:8080/api/**):\n\n  0. Register worker/employer/admin accounts, verify emails, login, activate\n  1. Employer posts a job and assigns the worker\n  2. Attendance is marked for several days of the month\n  3. Salary slip PDF is generated, downloaded, history + CSV + batch ZIP verified\n  4. Performance review is submitted and read back\n  5. Notifications are received for each triggering event (job-assigned, salary-slip-generated, performance-reviewed)\n  6. Admin dashboard analytics reflect all of the above\n\nTwo infrastructure gaps of the current platform are covered by companion scripts in integration-tests/scripts (see integration-tests/README.md):\n  - Email verification tokens are only stored in MySQL (no mailer exists), so scripts/fetch-verification-tokens.sh extracts them from the auth database.\n  - No service publishes Kafka notification events yet, so scripts/publish-notification-events.sh simulates the producers.\n\nRun headlessly with scripts/run-newman.sh or interactively in Postman by following the manual walkthrough in integration-tests/README.md.",
+    "description": "End-to-end integration suite for the Domestic Connects microservice platform. Exercises the full worker lifecycle through the API gateway (http://localhost:8080/api/**):\n\n  0. Register worker/employer/admin accounts and log all three in\n  1. Employer posts a job and assigns the worker\n  2. Attendance is marked for several days of the month\n  3. Salary slip PDF is generated, downloaded, history + CSV + batch ZIP verified\n  4. Performance review is submitted and read back\n  5. Notifications are received for each triggering event (job-assigned, salary-slip-generated, performance-reviewed)\n  6. Admin dashboard analytics reflect all of the above\n\nOne infrastructure gap of the current platform is covered by a companion script in integration-tests/scripts (see integration-tests/README.md): no service publishes Kafka notification events yet, so scripts/publish-notification-events.sh simulates the producers.\n\nRun headlessly with scripts/run-newman.sh or interactively in Postman by following the manual walkthrough in integration-tests/README.md.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "month", "value": "01" },
-    { "key": "year", "value": "2026" },
-    { "key": "workerName", "value": "" },
-    { "key": "workerEmail", "value": "" },
-    { "key": "workerPassword", "value": "Passw0rd!123" },
-    { "key": "employerName", "value": "" },
-    { "key": "employerEmail", "value": "" },
-    { "key": "employerPassword", "value": "Passw0rd!123" },
-    { "key": "adminName", "value": "" },
-    { "key": "adminEmail", "value": "" },
-    { "key": "adminPassword", "value": "Passw0rd!123" },
-    { "key": "workerVerifyToken", "value": "" },
-    { "key": "employerVerifyToken", "value": "" },
-    { "key": "adminVerifyToken", "value": "" },
-    { "key": "workerId", "value": "" },
-    { "key": "employerId", "value": "" },
-    { "key": "adminId", "value": "" },
-    { "key": "jobId", "value": "" },
-    { "key": "jobId2", "value": "" },
-    { "key": "reviewId", "value": "" },
-    { "key": "notificationId", "value": "" },
-    { "key": "workerToken", "value": "" },
-    { "key": "employerToken", "value": "" },
-    { "key": "adminToken", "value": "" },
-    { "key": "workerRefreshToken", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "month",
+      "value": "01"
+    },
+    {
+      "key": "year",
+      "value": "2026"
+    },
+    {
+      "key": "workerName",
+      "value": ""
+    },
+    {
+      "key": "workerEmail",
+      "value": ""
+    },
+    {
+      "key": "workerPassword",
+      "value": "Passw0rd!123"
+    },
+    {
+      "key": "employerName",
+      "value": ""
+    },
+    {
+      "key": "employerEmail",
+      "value": ""
+    },
+    {
+      "key": "employerPassword",
+      "value": "Passw0rd!123"
+    },
+    {
+      "key": "adminName",
+      "value": ""
+    },
+    {
+      "key": "adminEmail",
+      "value": ""
+    },
+    {
+      "key": "adminPassword",
+      "value": "Passw0rd!123"
+    },
+    {
+      "key": "workerId",
+      "value": ""
+    },
+    {
+      "key": "employerId",
+      "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "jobId",
+      "value": ""
+    },
+    {
+      "key": "jobId2",
+      "value": ""
+    },
+    {
+      "key": "reviewId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "workerToken",
+      "value": ""
+    },
+    {
+      "key": "employerToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "workerRefreshToken",
+      "value": ""
+    }
   ],
   "event": [
     {
@@ -68,7 +134,7 @@
   "item": [
     {
       "name": "0. Register Accounts",
-      "description": "Creates the three accounts used across the whole lifecycle: a WORKER, an EMPLOYER and an ADMIN. Registration returns JWT access tokens, but accounts start unverified (and are activated by the ADMIN in folder 1).",
+      "description": "Creates the three accounts used across the whole lifecycle: a WORKER, an EMPLOYER and an ADMIN. Registration returns JWT access tokens and immediately usable (active) accounts — there is no email verification step.",
       "item": [
         {
           "name": "Register worker account",
@@ -92,7 +158,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -100,8 +169,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
             }
           },
           "response": []
@@ -128,7 +203,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -136,8 +214,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
             }
           },
           "response": []
@@ -164,7 +248,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -172,8 +259,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
             }
           },
           "response": []
@@ -195,7 +288,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -203,8 +299,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
             }
           },
           "response": []
@@ -212,122 +314,11 @@
       ]
     },
     {
-      "name": "1. Verify, Login & Activate",
-      "description": "Verifies each account email (verification tokens are extracted from MySQL by scripts/fetch-verification-tokens.sh), logs all three users in, exercises the deactivate -> login-rejected -> reactivate -> login-ok cycle, and refreshes the worker's access token.",
+      "name": "1. Login & Activate",
+      "description": "Logs all three users in, exercises the deactivate -> login-rejected -> reactivate -> login-ok cycle, and refreshes the worker's access token.",
       "item": [
         {
-          "name": "NEGATIVE: login before email verification is rejected",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Login before verification rejected (400)',()=>pm.expect(pm.response.code).to.eql(400));",
-                  "pm.test('Message asks to verify the email first',()=>pm.expect(pm.response.json().message).to.include('verify your email'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{workerEmail}}\",\n  \"password\": \"{{workerPassword}}\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            }
-          }
-        },
-        {
-          "name": "Verify worker email (token from fetch-verification-tokens.sh)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Verification token was provided by the helper script',()=>{const t=pm.collectionVariables.get('workerVerifyToken')||(pm.environment?pm.environment.get('workerVerifyToken'):'');pm.expect(t).to.be.a('string').and.to.not.eql('');});",
-                  "pm.test('Worker email verified (200)',()=>pm.expect(pm.response.code).to.eql(200));",
-                  "pm.test('Verification success flag is true',()=>pm.expect(pm.response.json().success).to.eql(true));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/verify/{{workerVerifyToken}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "verify", "{{workerVerifyToken}}"]
-            }
-          }
-        },
-                {
-          "name": "Verify employer email (token from fetch-verification-tokens.sh)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Verification token was provided by the helper script',()=>{const t=pm.collectionVariables.get('employerVerifyToken')||(pm.environment?pm.environment.get('employerVerifyToken'):'');pm.expect(t).to.be.a('string').and.to.not.eql('');});",
-                  "pm.test('Employer email verified (200)',()=>pm.expect(pm.response.code).to.eql(200));",
-                  "pm.test('Verification success flag is true',()=>pm.expect(pm.response.json().success).to.eql(true));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/verify/{{employerVerifyToken}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "verify", "{{employerVerifyToken}}"]
-            }
-          }
-        },
-        {
-          "name": "Verify admin email (token from fetch-verification-tokens.sh)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Verification token was provided by the helper script',()=>{const t=pm.collectionVariables.get('adminVerifyToken')||(pm.environment?pm.environment.get('adminVerifyToken'):'');pm.expect(t).to.be.a('string').and.to.not.eql('');});",
-                  "pm.test('Admin email verified (200)',()=>pm.expect(pm.response.code).to.eql(200));",
-                  "pm.test('Verification success flag is true',()=>pm.expect(pm.response.json().success).to.eql(true));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/verify/{{adminVerifyToken}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "verify", "{{adminVerifyToken}}"]
-            }
-          }
-        },
-                {
-          "name": "Login worker (verified & active)",
+          "name": "Login worker (active)",
           "event": [
             {
               "listen": "test",
@@ -337,7 +328,7 @@
                   "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
                   "const json=pm.response.json();",
                   "pm.test('Worker login returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
-                  "pm.test('Worker is verified and active',()=>{pm.expect(json.user.verified).to.eql(true);pm.expect(json.user.active).to.eql(true);});",
+                  "pm.test('worker is active',()=>{pm.expect(json.user.active).to.eql(true);});",
                   "pm.test('Access token issued',()=>pm.expect(json.accessToken).to.be.a('string').and.to.not.be.empty);",
                   "setVar('workerToken',json.accessToken);",
                   "setVar('workerRefreshToken',json.refreshToken);"
@@ -348,7 +339,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -356,13 +350,19 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "Login employer (verified & active)",
+          "name": "Login employer (active)",
           "event": [
             {
               "listen": "test",
@@ -372,7 +372,7 @@
                   "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
                   "const json=pm.response.json();",
                   "pm.test('Employer login returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
-                  "pm.test('Employer is verified and active',()=>{pm.expect(json.user.verified).to.eql(true);pm.expect(json.user.active).to.eql(true);});",
+                  "pm.test('employer is active',()=>{pm.expect(json.user.active).to.eql(true);});",
                   "setVar('employerToken',json.accessToken);"
                 ]
               }
@@ -381,7 +381,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -389,13 +392,19 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
         {
-          "name": "Login admin (verified & active)",
+          "name": "Login admin (active)",
           "event": [
             {
               "listen": "test",
@@ -405,7 +414,7 @@
                   "function setVar(k,v){pm.collectionVariables.set(k,v);if(pm.environment&&typeof pm.environment.set==='function'){pm.environment.set(k,v);}}",
                   "const json=pm.response.json();",
                   "pm.test('Admin login returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
-                  "pm.test('Admin is verified and active',()=>{pm.expect(json.user.verified).to.eql(true);pm.expect(json.user.active).to.eql(true);});",
+                  "pm.test('admin is active',()=>{pm.expect(json.user.active).to.eql(true);});",
                   "setVar('adminToken',json.accessToken);"
                 ]
               }
@@ -414,7 +423,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -422,12 +434,18 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
-                {
+        {
           "name": "Admin deactivates worker account",
           "event": [
             {
@@ -444,12 +462,24 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/admin/users/{{workerId}}/deactivate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "admin", "users", "{{workerId}}", "deactivate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "admin",
+                "users",
+                "{{workerId}}",
+                "deactivate"
+              ]
             }
           }
         },
@@ -470,7 +500,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -478,8 +511,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -500,17 +539,29 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/admin/users/{{workerId}}/activate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "admin", "users", "{{workerId}}", "activate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "admin",
+                "users",
+                "{{workerId}}",
+                "activate"
+              ]
             }
           }
         },
         {
-          "name": "Login worker after reactivation",
+          "name": "Login worker (active)",
           "event": [
             {
               "listen": "test",
@@ -529,7 +580,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -537,8 +591,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             }
           }
         },
@@ -562,7 +622,10 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -570,8 +633,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/refresh",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "refresh"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
             }
           }
         }
@@ -602,8 +671,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -611,8 +686,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/jobs",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "jobs"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jobs"
+              ]
             }
           }
         },
@@ -634,12 +714,20 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/jobs",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "jobs"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jobs"
+              ]
             }
           }
         },
@@ -653,7 +741,7 @@
                 "exec": [
                   "const json=pm.response.json();",
                   "pm.test('Worker listing returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
-                  "pm.test('Listing is an array of WORKERs containing the bootstrapped worker',()=>{pm.expect(json.data).to.be.an('array');const w=json.data.find(u=>String(u.id)===pm.variables.get('workerId'));pm.expect(w).to.be.an('object');pm.expect(w.role).to.eql('WORKER');pm.expect(w.verified).to.eql(true);});"
+                  "pm.test('Listing is an array of WORKERs containing the bootstrapped worker',()=>{pm.expect(json.data).to.be.an('array');const w=json.data.find(u=>String(u.id)===pm.variables.get('workerId'));pm.expect(w).to.be.an('object');pm.expect(w.role).to.eql('WORKER');});"
                 ]
               }
             }
@@ -661,12 +749,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/workers",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "workers"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "workers"
+              ]
             }
           },
           "response": []
@@ -689,12 +786,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/jobs/{{jobId}}/assign/{{workerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "jobs", "{{jobId}}", "assign", "{{workerId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jobs",
+                "{{jobId}}",
+                "assign",
+                "{{workerId}}"
+              ]
             }
           }
         },
@@ -715,12 +823,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/jobs/{{jobId}}/assign/{{adminId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "jobs", "{{jobId}}", "assign", "{{adminId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jobs",
+                "{{jobId}}",
+                "assign",
+                "{{adminId}}"
+              ]
             }
           },
           "response": []
@@ -745,8 +864,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -754,8 +879,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/jobs",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "jobs"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jobs"
+              ]
             }
           },
           "response": []
@@ -778,12 +908,23 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/jobs/{{jobId2}}/assign/{{workerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "jobs", "{{jobId2}}", "assign", "{{workerId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jobs",
+                "{{jobId2}}",
+                "assign",
+                "{{workerId}}"
+              ]
             }
           },
           "response": []
@@ -804,8 +945,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -813,8 +960,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/jobs",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "jobs"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jobs"
+              ]
             }
           }
         }
@@ -841,8 +993,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -850,8 +1008,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/mark",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "mark"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "mark"
+              ]
             }
           }
         },
@@ -872,8 +1036,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -881,8 +1051,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/mark",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "mark"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "mark"
+              ]
             }
           }
         },
@@ -903,8 +1079,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -912,12 +1094,18 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/mark",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "mark"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "mark"
+              ]
             }
           }
         },
-                {
+        {
           "name": "Mark attendance - day 4 (HALF_DAY)",
           "event": [
             {
@@ -934,8 +1122,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -943,8 +1137,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/mark",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "mark"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "mark"
+              ]
             }
           }
         },
@@ -965,8 +1165,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -974,8 +1180,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/mark",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "mark"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "mark"
+              ]
             }
           }
         },
@@ -996,8 +1208,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1005,8 +1223,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/attendance/mark",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "mark"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "mark"
+              ]
             }
           }
         },
@@ -1032,15 +1256,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/worker/{{workerId}}?month={{month}}&year={{year}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "worker", "{{workerId}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "worker",
+                "{{workerId}}"
+              ],
               "query": [
-                { "key": "month", "value": "{{month}}" },
-                { "key": "year", "value": "{{year}}" }
+                {
+                  "key": "month",
+                  "value": "{{month}}"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}"
+                }
               ]
             }
           }
@@ -1065,15 +1305,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/worker/{{workerId}}?month={{month}}&year={{year}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "worker", "{{workerId}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "worker",
+                "{{workerId}}"
+              ],
               "query": [
-                { "key": "month", "value": "{{month}}" },
-                { "key": "year", "value": "{{year}}" }
+                {
+                  "key": "month",
+                  "value": "{{month}}"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}"
+                }
               ]
             }
           }
@@ -1095,15 +1351,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/attendance/worker/{{employerId}}?month={{month}}&year={{year}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "attendance", "worker", "{{employerId}}"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "worker",
+                "{{employerId}}"
+              ],
               "query": [
-                { "key": "month", "value": "{{month}}" },
-                { "key": "year", "value": "{{year}}" }
+                {
+                  "key": "month",
+                  "value": "{{month}}"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}"
+                }
               ]
             }
           }
@@ -1135,16 +1407,35 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/payroll/{{workerId}}/slip?month={{month}}&year={{year}}&workerName={{workerName}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "payroll", "{{workerId}}", "slip"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payroll",
+                "{{workerId}}",
+                "slip"
+              ],
               "query": [
-                { "key": "month", "value": "{{month}}" },
-                { "key": "year", "value": "{{year}}" },
-                { "key": "workerName", "value": "{{workerName}}" }
+                {
+                  "key": "month",
+                  "value": "{{month}}"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}"
+                },
+                {
+                  "key": "workerName",
+                  "value": "{{workerName}}"
+                }
               ]
             }
           }
@@ -1169,20 +1460,36 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/payroll/{{workerId}}/history?month={{month}}&year={{year}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "payroll", "{{workerId}}", "history"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payroll",
+                "{{workerId}}",
+                "history"
+              ],
               "query": [
-                { "key": "month", "value": "{{month}}" },
-                { "key": "year", "value": "{{year}}" }
+                {
+                  "key": "month",
+                  "value": "{{month}}"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}"
+                }
               ]
             }
           }
         },
-                {
+        {
           "name": "Export salary history (CSV)",
           "event": [
             {
@@ -1201,15 +1508,32 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/payroll/{{workerId}}/history/export?month={{month}}&year={{year}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "payroll", "{{workerId}}", "history", "export"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payroll",
+                "{{workerId}}",
+                "history",
+                "export"
+              ],
               "query": [
-                { "key": "month", "value": "{{month}}" },
-                { "key": "year", "value": "{{year}}" }
+                {
+                  "key": "month",
+                  "value": "{{month}}"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}"
+                }
               ]
             }
           }
@@ -1233,15 +1557,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/payroll/batch/slips?month={{month}}&year={{year}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "payroll", "batch", "slips"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payroll",
+                "batch",
+                "slips"
+              ],
               "query": [
-                { "key": "month", "value": "{{month}}" },
-                { "key": "year", "value": "{{year}}" }
+                {
+                  "key": "month",
+                  "value": "{{month}}"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}"
+                }
               ]
             }
           }
@@ -1262,15 +1602,31 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/payroll/{{adminId}}/slip?month={{month}}&year={{year}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "payroll", "{{adminId}}", "slip"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payroll",
+                "{{adminId}}",
+                "slip"
+              ],
               "query": [
-                { "key": "month", "value": "{{month}}" },
-                { "key": "year", "value": "{{year}}" }
+                {
+                  "key": "month",
+                  "value": "{{month}}"
+                },
+                {
+                  "key": "year",
+                  "value": "{{year}}"
+                }
               ]
             }
           }
@@ -1302,8 +1658,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1311,8 +1673,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/performance/review",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "performance", "review"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "performance",
+                "review"
+              ]
             }
           }
         },
@@ -1336,12 +1704,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/performance/worker/{{workerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "performance", "worker", "{{workerId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "performance",
+                "worker",
+                "{{workerId}}"
+              ]
             }
           }
         },
@@ -1362,12 +1740,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/performance/worker/{{workerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "performance", "worker", "{{workerId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "performance",
+                "worker",
+                "{{workerId}}"
+              ]
             }
           }
         },
@@ -1387,12 +1775,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/performance/worker/{{employerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "performance", "worker", "{{employerId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "performance",
+                "worker",
+                "{{employerId}}"
+              ]
             }
           }
         },
@@ -1413,8 +1811,14 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -1422,8 +1826,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/performance/review/{{reviewId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "performance", "review", "{{reviewId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "performance",
+                "review",
+                "{{reviewId}}"
+              ]
             }
           }
         }
@@ -1458,12 +1869,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/notifications/{{workerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "notifications", "{{workerId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{workerId}}"
+              ]
             }
           }
         },
@@ -1484,12 +1904,22 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "notifications", "{{notificationId}}", "read"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
             }
           }
         },
@@ -1509,12 +1939,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/notifications/{{workerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "notifications", "{{workerId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{workerId}}"
+              ]
             }
           }
         },
@@ -1537,12 +1976,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{workerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{workerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/notifications/{{workerId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "notifications", "{{workerId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{workerId}}"
+              ]
             }
           }
         }
@@ -1573,12 +2021,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/dashboard/summary",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "dashboard", "summary"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard",
+                "summary"
+              ]
             }
           }
         },
@@ -1603,12 +2061,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/dashboard/analytics",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "dashboard", "analytics"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard",
+                "analytics"
+              ]
             }
           }
         },
@@ -1630,12 +2098,21 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/users",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "users"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
             }
           }
         },
@@ -1655,12 +2132,22 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{employerToken}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/admin/dashboard/analytics",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "dashboard", "analytics"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard",
+                "analytics"
+              ]
             }
           }
         }

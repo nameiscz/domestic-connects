@@ -81,13 +81,13 @@ class AdminServiceTest {
     private List<UserInfo> sampleUsers() {
         return List.of(
                 UserInfo.builder().id(1L).name("Admin").email("admin@test.com")
-                        .role(UserRole.ADMIN).isVerified(true).isActive(true).build(),
+                        .role(UserRole.ADMIN).isActive(true).build(),
                 UserInfo.builder().id(2L).name("Alice").email("alice@test.com")
-                        .role(UserRole.WORKER).isVerified(true).isActive(true).build(),
+                        .role(UserRole.WORKER).isActive(true).build(),
                 UserInfo.builder().id(3L).name("Bob").email("bob@test.com")
-                        .role(UserRole.WORKER).isVerified(true).isActive(false).build(),
+                        .role(UserRole.WORKER).isActive(false).build(),
                 UserInfo.builder().id(4L).name("Erin").email("erin@test.com")
-                        .role(UserRole.EMPLOYER).isVerified(true).isActive(true).build());
+                        .role(UserRole.EMPLOYER).isActive(true).build());
     }
 
     private List<JobPostResponse> sampleJobs() {
@@ -191,10 +191,10 @@ class AdminServiceTest {
     @Test
     @DisplayName("UserInfo deserializes the JSON shape produced by auth-service")
     void userInfoDeserializesAuthJsonShape() throws Exception {
-        // auth-service serializes isVerified/isActive as "verified"/"active"
-        // (JavaBeans names from Lombok isXxx() getters).
+        // auth-service serializes isActive as "active" (JavaBeans name from
+        // the Lombok isXxx() getter).
         String json = """
-                {"id":2,"name":"Alice","email":"alice@test.com","role":"WORKER","verified":true,"active":false}
+                {"id":2,"name":"Alice","email":"alice@test.com","role":"WORKER","active":false}
                 """;
 
         UserInfo user = objectMapper.readValue(json, UserInfo.class);
@@ -202,7 +202,6 @@ class AdminServiceTest {
         assertThat(user.getId()).isEqualTo(2L);
         assertThat(user.getName()).isEqualTo("Alice");
         assertThat(user.getRole()).isEqualTo(UserRole.WORKER);
-        assertThat(user.isVerified()).isTrue();
         assertThat(user.isActive()).isFalse();
     }
 

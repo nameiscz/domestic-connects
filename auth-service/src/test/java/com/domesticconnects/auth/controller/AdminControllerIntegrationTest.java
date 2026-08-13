@@ -44,7 +44,6 @@ class AdminControllerIntegrationTest {
                 .email(email)
                 .password("encoded")
                 .role(role)
-                .isVerified(true)
                 .isActive(active)
                 .build();
         return userRepository.save(user);
@@ -156,8 +155,7 @@ class AdminControllerIntegrationTest {
                     .andExpect(jsonPath("$.data.length()").value(3))
                     .andExpect(jsonPath("$.data[1].role").value("WORKER"))
                     // Locks the wire format admin-service deserializes:
-                    // isVerified/isActive serialize as "verified"/"active".
-                    .andExpect(jsonPath("$.data[0].verified").value(true))
+                    // isActive serializes as "active".
                     .andExpect(jsonPath("$.data[0].active").value(true));
         }
 

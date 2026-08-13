@@ -34,8 +34,8 @@ class CustomUserDetailsServiceTest {
     class LoadUserByUsername {
 
         @Test
-        @DisplayName("should load active verified user successfully")
-        void shouldLoadActiveVerifiedUser() {
+        @DisplayName("should load active user successfully")
+        void shouldLoadActiveUser() {
             User user = User.builder()
                     .id(1L)
                     .name("Alice")
@@ -43,7 +43,6 @@ class CustomUserDetailsServiceTest {
                     .password("encoded-password")
                     .role(Role.WORKER)
                     .isActive(true)
-                    .isVerified(true)
                     .build();
 
             when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
@@ -72,7 +71,6 @@ class CustomUserDetailsServiceTest {
                     .password("encoded-password")
                     .role(Role.EMPLOYER)
                     .isActive(false)
-                    .isVerified(true)
                     .build();
 
             when(userRepository.findByEmail("bob@example.com")).thenReturn(Optional.of(user));
@@ -83,38 +81,15 @@ class CustomUserDetailsServiceTest {
         }
 
         @Test
-        @DisplayName("should always set accountNonLocked to true")
-        void shouldAlwaysSetAccountNonLockedToTrue() {
-            User unverifiedUser = User.builder()
-                    .id(3L)
-                    .name("Charlie")
-                    .email("charlie@example.com")
-                    .password("encoded-password")
-                    .role(Role.WORKER)
-                    .isActive(true)
-                    .isVerified(false)
-                    .build();
-
-            when(userRepository.findByEmail("charlie@example.com")).thenReturn(Optional.of(unverifiedUser));
-
-            UserDetails userDetails = userDetailsService.loadUserByUsername("charlie@example.com");
-
-            // accountNonLocked should be true even for unverified users
-            // (verification is checked separately in service layer)
-            assertThat(userDetails.isAccountNonLocked()).isTrue();
-        }
-
-        @Test
         @DisplayName("should assign correct ROLE_ADMIN authority")
         void shouldAssignAdminRole() {
             User admin = User.builder()
-                    .id(4L)
+                    .id(3L)
                     .name("Admin")
                     .email("admin@example.com")
                     .password("encoded-password")
                     .role(Role.ADMIN)
                     .isActive(true)
-                    .isVerified(true)
                     .build();
 
             when(userRepository.findByEmail("admin@example.com")).thenReturn(Optional.of(admin));

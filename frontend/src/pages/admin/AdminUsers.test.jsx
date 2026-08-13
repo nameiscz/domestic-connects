@@ -10,9 +10,9 @@ const { default: axiosInstance } = vi.hoisted(() => ({
 vi.mock('../../api/axiosInstance', () => ({ default: axiosInstance }));
 
 const USERS = [
-  { id: 1, name: 'Ana', email: 'ana@example.com', role: 'WORKER', verified: true, active: true },
-  { id: 2, name: 'Bob', email: 'bob@example.com', role: 'EMPLOYER', verified: true, active: false },
-  { id: 3, name: 'Carlos', email: 'carlos@example.com', role: 'WORKER', verified: false, active: true },
+  { id: 1, name: 'Ana', email: 'ana@example.com', role: 'WORKER', active: true },
+  { id: 2, name: 'Bob', email: 'bob@example.com', role: 'EMPLOYER', active: false },
+  { id: 3, name: 'Carlos', email: 'carlos@example.com', role: 'WORKER', active: true },
 ];
 
 const renderPage = () => render(<AdminUsers />);
@@ -29,12 +29,11 @@ describe('AdminUsers', () => {
 
     expect(await screen.findByText('Ana')).toBeInTheDocument();
     expect(screen.getByText('bob@example.com')).toBeInTheDocument();
-    // Two WORKER rows (Ana + the unverified account) vs one EMPLOYER row.
+    // Two WORKER rows (Ana + Carlos) vs one EMPLOYER row.
     expect(screen.getAllByText('WORKER')).toHaveLength(2);
     expect(screen.getByText('EMPLOYER')).toBeInTheDocument();
     expect(screen.getAllByText('Active')).toHaveLength(2);
     expect(screen.getByText('Deactivated')).toBeInTheDocument();
-    expect(screen.getByText('Unverified')).toBeInTheDocument();
   });
 
   it('deactivates an active user via PATCH and updates the row', async () => {

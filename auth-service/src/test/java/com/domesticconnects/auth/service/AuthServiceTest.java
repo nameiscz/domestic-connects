@@ -20,7 +20,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -48,9 +47,6 @@ class AuthServiceTest {
     @Mock
     private JwtUtils jwtUtils;
 
-    @Mock
-    private VerificationMailer verificationMailer;
-
     private AuthService authService;
 
     @Captor
@@ -59,20 +55,18 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         authService = new AuthService(userRepository, passwordEncoder, authenticationManager,
-                jwtUtils, verificationMailer);
+                jwtUtils);
         ReflectionTestUtils.setField(authService, "accessTokenExpiration", 900000L);
     }
 
-    private User createTestUser(Long id, String email, Role role, boolean verified, boolean active) {
+    private User createTestUser(Long id, String email, Role role, boolean active) {
         return User.builder()
                 .id(id)
                 .name("Test User")
                 .email(email)
                 .password("encoded-password")
                 .role(role)
-                .isVerified(verified)
                 .isActive(active)
-                .verificationToken("vToken-" + id)
                 .build();
     }
 
@@ -95,9 +89,7 @@ class AuthServiceTest {
                     .email("alice@example.com")
                     .password("bcrypt-hashed")
                     .role(Role.WORKER)
-                    .isVerified(false)
                     .isActive(true)
-                    .verificationToken("uuid-token")
                     .build();
 
             when(userRepository.existsByEmail("alice@example.com")).thenReturn(false);
@@ -116,13 +108,13 @@ class AuthServiceTest {
             assertThat(response.getTokenType()).isEqualTo("Bearer");
             assertThat(response.getUser().getEmail()).isEqualTo("alice@example.com");
             assertThat(response.getUser().getRole()).isEqualTo(Role.WORKER);
-            assertThat(response.getUser().isVerified()).isFalse();
             assertThat(response.getUser().isActive()).isTrue();
 
             verify(userRepository).existsByEmail("alice@example.com");
             verify(userRepository).save(userCaptor.capture());
             User captured = userCaptor.getValue();
-            assertThat(captured.getVerificationToken()).isNotBlank();
+            assertThat(captured.getEmail()).isEqualTo("alice@example.com");
+            assertThat(captured.isActive()).isTrue();
         }
 
         @Test
@@ -155,9 +147,7 @@ class AuthServiceTest {
                     .email("bob@example.com")
                     .password("bcrypt-hashed")
                     .role(Role.EMPLOYER)
-                    .isVerified(false)
                     .isActive(true)
-                    .verificationToken("uuid")
                     .build();
 
             when(userRepository.existsByEmail("bob@example.com")).thenReturn(false);
@@ -172,38 +162,6 @@ class AuthServiceTest {
             verify(userRepository).save(userCaptor.capture());
             assertThat(userCaptor.getValue().getPassword()).isEqualTo("bcrypt-hashed");
         }
-
-        @Test
-        @DisplayName("should generate verification token on registration")
-        void shouldGenerateVerificationToken() {
-            RegisterRequest request = new RegisterRequest();
-            request.setName("Charlie");
-            request.setEmail("charlie@example.com");
-            request.setPassword("password123");
-            request.setRole(Role.WORKER);
-
-            User savedUser = User.builder()
-                    .id(3L)
-                    .name("Charlie")
-                    .email("charlie@example.com")
-                    .password("hashed")
-                    .role(Role.WORKER)
-                    .isVerified(false)
-                    .isActive(true)
-                    .verificationToken("generated-uuid")
-                    .build();
-
-            when(userRepository.existsByEmail("charlie@example.com")).thenReturn(false);
-            when(passwordEncoder.encode(anyString())).thenReturn("hashed");
-            when(userRepository.save(any(User.class))).thenReturn(savedUser);
-            when(jwtUtils.generateAccessToken(anyString(), anyLong(), any())).thenReturn("token");
-            when(jwtUtils.generateRefreshToken(anyString())).thenReturn("rtoken");
-
-            authService.register(request);
-
-            verify(userRepository).save(userCaptor.capture());
-            assertThat(userCaptor.getValue().getVerificationToken()).isNotEmpty();
-        }
     }
 
     @Nested
@@ -211,13 +169,13 @@ class AuthServiceTest {
     class Login {
 
         @Test
-        @DisplayName("should authenticate and return tokens for active verified user")
-        void shouldLoginActiveVerifiedUser() {
+        @DisplayName("should authenticate and return tokens for active user")
+        void shouldLoginActiveUser() {
             LoginRequest request = new LoginRequest();
             request.setEmail("alice@example.com");
             request.setPassword("password123");
 
-            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true, true);
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
 
             when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
             when(jwtUtils.generateAccessToken("alice@example.com", 1L, Role.WORKER))
@@ -241,29 +199,13 @@ class AuthServiceTest {
             request.setEmail("deactivated@example.com");
             request.setPassword("password123");
 
-            User user = createTestUser(2L, "deactivated@example.com", Role.WORKER, true, false);
+            User user = createTestUser(2L, "deactivated@example.com", Role.WORKER, false);
 
             when(userRepository.findByEmail("deactivated@example.com")).thenReturn(Optional.of(user));
 
             assertThatThrownBy(() -> authService.login(request))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("deactivated");
-        }
-
-        @Test
-        @DisplayName("should throw for unverified user")
-        void shouldThrowForUnverifiedUser() {
-            LoginRequest request = new LoginRequest();
-            request.setEmail("unverified@example.com");
-            request.setPassword("password123");
-
-            User user = createTestUser(3L, "unverified@example.com", Role.WORKER, false, true);
-
-            when(userRepository.findByEmail("unverified@example.com")).thenReturn(Optional.of(user));
-
-            assertThatThrownBy(() -> authService.login(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("verify your email");
         }
 
         @Test
@@ -292,7 +234,7 @@ class AuthServiceTest {
             RefreshTokenRequest request = new RefreshTokenRequest();
             request.setRefreshToken("valid-refresh-token");
 
-            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true, true);
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
 
             when(jwtUtils.validateToken("valid-refresh-token")).thenReturn(true);
             when(jwtUtils.getTokenType("valid-refresh-token")).thenReturn("refresh");
@@ -342,7 +284,7 @@ class AuthServiceTest {
             RefreshTokenRequest request = new RefreshTokenRequest();
             request.setRefreshToken("valid-refresh-token");
 
-            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true, false);
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, false);
 
             when(jwtUtils.validateToken("valid-refresh-token")).thenReturn(true);
             when(jwtUtils.getTokenType("valid-refresh-token")).thenReturn("refresh");
@@ -372,60 +314,13 @@ class AuthServiceTest {
     }
 
     @Nested
-    @DisplayName("Verify Email")
-    class VerifyEmail {
-
-        @Test
-        @DisplayName("should verify user with valid token")
-        void shouldVerifyEmail() {
-            User user = createTestUser(1L, "alice@example.com", Role.WORKER, false, true);
-
-            when(userRepository.findByVerificationToken("valid-token")).thenReturn(Optional.of(user));
-            when(userRepository.save(any(User.class))).thenReturn(user);
-
-            ApiResponse<Void> response = authService.verifyEmail("valid-token");
-
-            assertThat(response.isSuccess()).isTrue();
-            assertThat(response.getMessage()).contains("verified successfully");
-
-            verify(userRepository).save(userCaptor.capture());
-            assertThat(userCaptor.getValue().isVerified()).isTrue();
-            assertThat(userCaptor.getValue().getVerificationToken()).isNull();
-        }
-
-        @Test
-        @DisplayName("should indicate if email is already verified")
-        void shouldReturnAlreadyVerified() {
-            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true, true);
-
-            when(userRepository.findByVerificationToken("used-token")).thenReturn(Optional.of(user));
-
-            ApiResponse<Void> response = authService.verifyEmail("used-token");
-
-            assertThat(response.isSuccess()).isTrue();
-            assertThat(response.getMessage()).contains("already verified");
-            verify(userRepository, never()).save(any());
-        }
-
-        @Test
-        @DisplayName("should throw for invalid verification token")
-        void shouldThrowForInvalidToken() {
-            when(userRepository.findByVerificationToken("bogus-token")).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> authService.verifyEmail("bogus-token"))
-                    .isInstanceOf(ResourceNotFoundException.class)
-                    .hasMessageContaining("Verification token");
-        }
-    }
-
-    @Nested
     @DisplayName("Admin - Activate User")
     class ActivateUser {
 
         @Test
         @DisplayName("should activate a deactivated user")
         void shouldActivateUser() {
-            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true, false);
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, false);
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(userRepository.save(any(User.class))).thenReturn(user);
@@ -442,7 +337,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("should indicate if user is already active")
         void shouldReturnAlreadyActive() {
-            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true, true);
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
@@ -471,7 +366,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("should deactivate an active user")
         void shouldDeactivateUser() {
-            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true, true);
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(userRepository.save(any(User.class))).thenReturn(user);
@@ -488,7 +383,7 @@ class AuthServiceTest {
         @Test
         @DisplayName("should indicate if user is already deactivated")
         void shouldReturnAlreadyDeactivated() {
-            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true, false);
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, false);
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 

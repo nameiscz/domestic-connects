@@ -4,7 +4,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ROLE_HOME } from './constants/roles';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import VerifyEmail from './pages/VerifyEmail';
 import NotFound from './pages/NotFound';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import JobBrowse from './pages/worker/JobBrowse';
@@ -39,7 +38,6 @@ export default function App() {
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/verify" element={<VerifyEmail />} />
 
           {/* Role-gated dashboards (nested routes render via <Outlet />) */}
           <Route

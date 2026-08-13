@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Register from './Register';
@@ -17,6 +17,8 @@ const renderRegister = () =>
       <Routes>
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<div>Login Page</div>} />
+        <Route path="/worker" element={<div>Worker Dashboard</div>} />
+        <Route path="/employer" element={<div>Employer Dashboard</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -33,10 +35,6 @@ const fillForm = async (user, overrides = {}) => {
 describe('Register', () => {
   beforeEach(() => {
     useAuth.mockReturnValue({ register: vi.fn() });
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('renders the form with WORKER and EMPLOYER roles only', () => {
@@ -116,7 +114,7 @@ describe('Register', () => {
       await act(async () => {
         resolveRegister({ id: 1, name: 'Jane Doe', role: 'WORKER' });
       });
-      expect(screen.getByText(/verify your email/i)).toBeInTheDocument();
+      expect(await screen.findByText('Worker Dashboard')).toBeInTheDocument();
     });
   });
 
@@ -131,7 +129,7 @@ describe('Register', () => {
       await user.selectOptions(screen.getByLabelText('I am a…'), 'EMPLOYER');
       await user.click(screen.getByRole('button', { name: /create account/i }));
 
-      await screen.findByText(/Account created — verify your email/i);
+      expect(await screen.findByText('Employer Dashboard')).toBeInTheDocument();
       expect(register).toHaveBeenCalledWith(
         expect.objectContaining({ role: 'EMPLOYER' })
       );
@@ -139,7 +137,7 @@ describe('Register', () => {
   });
 
   describe('success flow', () => {
-    it('shows a verify-email message with the submitted email', async () => {
+    it('signs the user in and lands on the worker dashboard', async () => {
       const user = userEvent.setup();
       const register = vi.fn().mockResolvedValue({ id: 1, role: 'WORKER' });
       useAuth.mockReturnValue({ register });
@@ -148,49 +146,14 @@ describe('Register', () => {
       await fillForm(user);
       await user.click(screen.getByRole('button', { name: /create account/i }));
 
-      expect(
-        await screen.findByText(/Account created — verify your email/i)
-      ).toBeInTheDocument();
-      expect(screen.getByText('jane@example.com')).toBeInTheDocument();
+      expect(await screen.findByText('Worker Dashboard')).toBeInTheDocument();
       expect(register).toHaveBeenCalledTimes(1);
-    });
-
-    it('auto-redirects to /login after the countdown', async () => {
-      vi.useFakeTimers();
-      const register = vi.fn().mockResolvedValue({ id: 1, role: 'WORKER' });
-      useAuth.mockReturnValue({ register });
-      renderRegister();
-
-      // fireEvent is used here because userEvent relies on timers that are
-      // frozen by vi.useFakeTimers().
-      fireEvent.change(screen.getByLabelText('Full name'), {
-        target: { value: 'Jane Doe' },
+      expect(register).toHaveBeenCalledWith({
+        name: 'Jane Doe',
+        email: 'jane@example.com',
+        password: 'secret123',
+        role: 'WORKER',
       });
-      fireEvent.change(screen.getByLabelText('Email address'), {
-        target: { value: 'jane@example.com' },
-      });
-      fireEvent.change(screen.getByLabelText('Password'), {
-        target: { value: 'secret123' },
-      });
-      fireEvent.click(screen.getByRole('button', { name: /create account/i }));
-
-      // Flush the resolved register() promise so the success alert renders.
-      await act(async () => {});
-      expect(screen.getByText(/Account created — verify your email/i)).toBeInTheDocument();
-      expect(screen.getByText(/in 3s/)).toBeInTheDocument();
-
-      // One second in, the countdown must tick down.
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(1000);
-      });
-      expect(screen.getByText(/in 2s/)).toBeInTheDocument();
-
-      // Advance past the 3-second redirect (small margin for timer
-      // boundary off-by-ones on slow CI machines).
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(2050);
-      });
-      expect(screen.getByText('Login Page')).toBeInTheDocument();
     });
   });
 
@@ -211,8 +174,44 @@ describe('Register', () => {
       expect(
         await screen.findByText("User with email 'jane@example.com' already exists")
       ).toBeInTheDocument();
-      expect(screen.queryByText(/Account created/i)).not.toBeInTheDocument();
+      expect(screen.queryByText('Worker Dashboard')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /create account/i })).toBeEnabled();
+    });
+
+    it('shows a clear message when the server cannot be reached', async () => {
+      const user = userEvent.setup();
+      // Network-level failure (backend down, CORS blocked, timeout) — axios
+      // errors like this have no `response`, so the old fallback was a
+      // misleading "Registration failed." message.
+      const register = vi.fn().mockRejectedValue(new Error('Network Error'));
+      useAuth.mockReturnValue({ register });
+      renderRegister();
+
+      await fillForm(user);
+      await user.click(screen.getByRole('button', { name: /create account/i }));
+
+      expect(
+        await screen.findByText(/Cannot reach the server/i)
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Registration failed/i)).not.toBeInTheDocument();
+      expect(screen.queryByText('Worker Dashboard')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /create account/i })).toBeEnabled();
+    });
+
+    it('shows the HTTP status when the server responds without a message', async () => {
+      const user = userEvent.setup();
+      const register = vi
+        .fn()
+        .mockRejectedValue({ response: { status: 500 } });
+      useAuth.mockReturnValue({ register });
+      renderRegister();
+
+      await fillForm(user);
+      await user.click(screen.getByRole('button', { name: /create account/i }));
+
+      expect(
+        await screen.findByText(/Request failed \(HTTP 500\)/i)
+      ).toBeInTheDocument();
     });
   });
 });
