@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * Resilience4j circuit breakers and fallbacks; this class only orchestrates
  * and computes metrics, skipping any {@code null} / empty fallback results.
  * <p>
- * Attendance rate for the current month is defined as
+ * Attendance rate for a given month is defined as
  * {@code (presentDays + 0.5 * halfDays) / totalDays * 100} aggregated across
  * all workers that have attendance that month. Average performance rating is
  * the mean of the workers' individual averages (workers without any review
@@ -54,7 +54,7 @@ public class AdminService {
                 .totalJobs(jobs.size())
                 .activeJobs(activeJobs)
                 .inactiveJobs(jobs.size() - activeJobs)
-                .monthlyAttendanceRate(computeMonthlyAttendanceRate())
+                .monthlyAttendanceRate(computeMonthlyAttendanceRate(YearMonth.now()))
                 .averagePerformanceRating(roundAverageRating(performance))
                 .totalReviews(performance.reviewCount())
                 .generatedAt(LocalDateTime.now())
@@ -71,10 +71,19 @@ public class AdminService {
     }
 
     public DashboardAnalytics getDashboardAnalytics() {
+        return getDashboardAnalytics(null);
+    }
+
+    /**
+     * @param month month to aggregate the attendance rate for ({@code yyyy-MM});
+     *              {@code null} means the current month
+     */
+    public DashboardAnalytics getDashboardAnalytics(YearMonth month) {
         List<UserInfo> users = getUsers();
         List<JobPostResponse> jobs = getJobs();
         long activeJobs = countActiveJobs(jobs);
         PerformanceTotals performance = computePerformanceTotals(users);
+        YearMonth targetMonth = month == null ? YearMonth.now() : month;
 
         return DashboardAnalytics.builder()
                 .usersByRole(users.stream().collect(
@@ -83,7 +92,7 @@ public class AdminService {
                         Collectors.groupingBy(job -> String.valueOf(job.getStatus()), Collectors.counting())))
                 .activeJobs(activeJobs)
                 .inactiveJobs(jobs.size() - activeJobs)
-                .monthlyAttendanceRate(computeMonthlyAttendanceRate())
+                .monthlyAttendanceRate(computeMonthlyAttendanceRate(targetMonth))
                 .averagePerformanceRating(roundAverageRating(performance))
                 .totalReviews(performance.reviewCount())
                 .build();
@@ -94,13 +103,13 @@ public class AdminService {
     // ------------------------------------------------------------------
 
     /**
-     * Current-month attendance rate across all workers, as a percentage (0-100)
-     * rounded to two decimal places. {@code null} when no attendance data exists.
+     * Attendance rate across all workers for the given month, as a percentage
+     * (0-100) rounded to two decimal places. {@code null} when no attendance
+     * data exists for that month.
      */
-    private Double computeMonthlyAttendanceRate() {
-        YearMonth now = YearMonth.now();
-        int month = now.getMonthValue();
-        int year = now.getYear();
+    private Double computeMonthlyAttendanceRate(YearMonth targetMonth) {
+        int month = targetMonth.getMonthValue();
+        int year = targetMonth.getYear();
 
         List<Long> workerIds = downstreamService.fetchWorkerIds(month, year);
         // Fractional accumulation: a half day counts as 0.5 present units. The

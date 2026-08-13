@@ -9,11 +9,14 @@ import com.domesticconnects.admin.exception.AccessDeniedException;
 import com.domesticconnects.admin.service.AdminService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.YearMonth;
 import java.util.List;
 
 /**
@@ -53,11 +56,19 @@ public class AdminController {
                 "Jobs fetched successfully", adminService.getJobs()));
     }
 
+    /**
+     * Analytics for the given {@code month} (format {@code yyyy-MM}); the
+     * attendance rate is aggregated for that month, while role/job counts and
+     * performance remain current-state snapshots. Defaults to the current month.
+     */
     @GetMapping("/dashboard/analytics")
-    public ResponseEntity<ApiResponse<DashboardAnalytics>> getDashboardAnalytics(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<DashboardAnalytics>> getDashboardAnalytics(
+            HttpServletRequest request,
+            @RequestParam(name = "month", required = false)
+            @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
         requireAdmin(request);
         return ResponseEntity.ok(ApiResponse.success(
-                "Dashboard analytics generated", adminService.getDashboardAnalytics()));
+                "Dashboard analytics generated", adminService.getDashboardAnalytics(month)));
     }
 
     /**
