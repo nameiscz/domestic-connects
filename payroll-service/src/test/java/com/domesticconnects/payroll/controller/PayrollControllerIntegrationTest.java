@@ -10,6 +10,7 @@ import com.domesticconnects.payroll.entity.SalaryRecord;
 import feign.FeignException;
 import feign.Request;
 import feign.Response;
+import com.domesticconnects.payroll.config.KafkaTestConfig;
 import com.domesticconnects.payroll.repository.SalaryRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -55,6 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(KafkaTestConfig.class)
 @DisplayName("PayrollController integration")
 class PayrollControllerIntegrationTest {
 

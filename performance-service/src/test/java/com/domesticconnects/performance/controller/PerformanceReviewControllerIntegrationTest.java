@@ -3,6 +3,7 @@ package com.domesticconnects.performance.controller;
 import com.domesticconnects.performance.dto.PerformanceReviewRequest;
 import com.domesticconnects.performance.dto.PerformanceReviewUpdateRequest;
 import com.domesticconnects.performance.entity.PerformanceReview;
+import com.domesticconnects.performance.config.KafkaTestConfig;
 import com.domesticconnects.performance.repository.PerformanceReviewRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +15,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -40,6 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(KafkaTestConfig.class)
 @DisplayName("PerformanceReviewController integration")
 class PerformanceReviewControllerIntegrationTest {
 

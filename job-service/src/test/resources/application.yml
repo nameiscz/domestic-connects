@@ -7,6 +7,11 @@ spring:
   cloud:
     config:
       enabled: false
+  # No Kafka broker in tests: exclude the auto-configuration so no real
+  # KafkaTemplate/producer machinery is created. KafkaTestConfig supplies a
+  # no-op mock template for the NotificationPublisher to inject.
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
   # No Redis in tests — keep @Cacheable methods as pass-throughs.
   cache:
     type: none
