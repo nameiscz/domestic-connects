@@ -16,6 +16,7 @@ const ANALYTICS = {
   inactiveJobs: 1,
   monthlyAttendanceRate: 87.5,
   averagePerformanceRating: 4.2,
+  totalReviews: 24,
 };
 
 const renderPage = () => render(<AdminAnalytics />);
@@ -33,6 +34,7 @@ describe('AdminAnalytics', () => {
     expect(screen.getByText('7')).toBeInTheDocument(); // total jobs
     expect(screen.getByText('87.5%')).toBeInTheDocument();
     expect(screen.getByText('4.20 / 5')).toBeInTheDocument();
+    expect(screen.getByText('24 reviews across workers')).toBeInTheDocument();
   });
 
   it('renders the users-by-role and jobs-by-status breakdowns', async () => {

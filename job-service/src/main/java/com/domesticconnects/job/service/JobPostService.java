@@ -128,6 +128,7 @@ public class JobPostService {
         }
 
         jobPost.setStatus(JobStatus.ASSIGNED);
+        jobPost.setWorkerId(workerId);
 
         log.info("Worker {} assigned to job post {}", workerId, id);
         // Best-effort notification — never fails the assignment.
@@ -149,6 +150,7 @@ public class JobPostService {
                 .title(jobPost.getTitle())
                 .description(jobPost.getDescription())
                 .employerId(jobPost.getEmployerId())
+                .workerId(jobPost.getWorkerId())
                 .wagePerDay(jobPost.getWagePerDay())
                 .location(jobPost.getLocation())
                 .status(jobPost.getStatus())

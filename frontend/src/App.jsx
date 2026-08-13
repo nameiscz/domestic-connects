@@ -15,6 +15,8 @@ import EmployerDashboard from './pages/employer/EmployerDashboard';
 import MyJobPosts from './pages/employer/MyJobPosts';
 import PostJob from './pages/employer/PostJob';
 import MarkAttendance from './pages/employer/MarkAttendance';
+import SubmitReview from './pages/SubmitReview';
+import ManageReviews from './pages/ManageReviews';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminAttendance from './pages/admin/AdminAttendance';
 import AdminUsers from './pages/admin/AdminUsers';
@@ -66,6 +68,8 @@ export default function App() {
             <Route path="jobs/new" element={<PostJob />} />
             <Route path="jobs/edit/:id" element={<PostJob />} />
             <Route path="attendance" element={<MarkAttendance />} />
+            <Route path="reviews" element={<ManageReviews />} />
+            <Route path="reviews/new" element={<SubmitReview />} />
           </Route>
           <Route
             path="/admin"
@@ -78,6 +82,8 @@ export default function App() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="jobs" element={<AdminJobs />} />
             <Route path="attendance" element={<AdminAttendance />} />
+            <Route path="reviews" element={<ManageReviews />} />
+            <Route path="reviews/new" element={<SubmitReview />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route
               path="audit-logs"

@@ -114,7 +114,11 @@ export default function AdminDashboard() {
                   ? '—'
                   : `${Number(summary.averagePerformanceRating).toFixed(2)} / 5`
               }
-              note="Across workers"
+              note={
+                summary?.totalReviews == null
+                  ? 'Across workers'
+                  : `${summary.totalReviews} review${summary.totalReviews === 1 ? '' : 's'} across workers`
+              }
               accent="warning"
             />
           </div>

@@ -27,5 +27,7 @@ public class DashboardSummary {
     private Double monthlyAttendanceRate;
     /** Average performance rating across workers (1-5), or null when unavailable. */
     private Double averagePerformanceRating;
+    /** Total performance reviews submitted across all workers. */
+    private long totalReviews;
     private LocalDateTime generatedAt;
 }

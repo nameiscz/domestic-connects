@@ -117,8 +117,8 @@ class AdminServiceTest {
         when(attendanceServiceClient.getWorkerAttendance(anyLong(), anyInt(), anyInt()))
                 .thenReturn(report(2L, 10, 2, 20), report(3L, 5, 0, 10));
         when(performanceServiceClient.getWorkerPerformance(anyLong()))
-                .thenReturn(WorkerPerformanceReport.builder().workerId(2L).averageRating(4.0).build(),
-                        WorkerPerformanceReport.builder().workerId(3L).averageRating(3.0).build());
+                .thenReturn(WorkerPerformanceReport.builder().workerId(2L).averageRating(4.0).reviewCount(3).build(),
+                        WorkerPerformanceReport.builder().workerId(3L).averageRating(3.0).reviewCount(5).build());
     }
 
     private static FeignException feignError(String message) {
@@ -149,6 +149,8 @@ class AdminServiceTest {
         assertThat(summary.getMonthlyAttendanceRate()).isEqualTo(53.33);
         // (4.0 + 3.0) / 2
         assertThat(summary.getAveragePerformanceRating()).isEqualTo(3.5);
+        // 3 + 5 reviews across the two workers
+        assertThat(summary.getTotalReviews()).isEqualTo(8);
         assertThat(summary.getGeneratedAt()).isNotNull();
     }
 
@@ -169,6 +171,8 @@ class AdminServiceTest {
                 .containsEntry("CLOSED", 2L);
         assertThat(analytics.getActiveJobs()).isEqualTo(2);
         assertThat(analytics.getInactiveJobs()).isEqualTo(2);
+        // Same aggregation as the summary: 3 + 5 reviews.
+        assertThat(analytics.getTotalReviews()).isEqualTo(8);
     }
 
     @Test
@@ -273,12 +277,14 @@ class AdminServiceTest {
                 .thenReturn(List.of());
         // Worker 2 has no rating yet, worker 3 is skipped because performance-service is down.
         when(performanceServiceClient.getWorkerPerformance(2L))
-                .thenReturn(WorkerPerformanceReport.builder().workerId(2L).averageRating(null).build());
+                .thenReturn(WorkerPerformanceReport.builder().workerId(2L).averageRating(null).reviewCount(2).build());
         when(performanceServiceClient.getWorkerPerformance(3L))
                 .thenThrow(feignError("performance-service down"));
 
         DashboardSummary summary = adminService.getDashboardSummary();
 
         assertThat(summary.getAveragePerformanceRating()).isNull();
+        // Reviews from the reachable worker still count even without a rating.
+        assertThat(summary.getTotalReviews()).isEqualTo(2);
     }
 }

@@ -13,11 +13,15 @@ export const NAV_LINKS = {
     // `end` keeps "My Job Posts" from staying active while on the new/edit forms.
     { to: '/employer/jobs', label: 'My Job Posts', end: true },
     { to: '/employer/attendance', label: 'Mark Attendance', end: true },
+    { to: '/employer/reviews', label: 'Manage Reviews', end: true },
+    { to: '/employer/reviews/new', label: 'Submit Review', end: true },
   ],
   ADMIN: [
     { to: '/admin/users', label: 'Users' },
     { to: '/admin/jobs', label: 'Jobs' },
     { to: '/admin/attendance', label: 'Attendance' },
+    { to: '/admin/reviews', label: 'Manage Reviews', end: true },
+    { to: '/admin/reviews/new', label: 'Submit Review', end: true },
     { to: '/admin/analytics', label: 'Analytics' },
     { to: '/admin/audit-logs', label: 'Audit Logs' },
   ],

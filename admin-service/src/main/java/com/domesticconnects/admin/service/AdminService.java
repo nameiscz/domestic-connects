@@ -46,6 +46,7 @@ public class AdminService {
         List<UserInfo> users = getUsers();
         List<JobPostResponse> jobs = getJobs();
         long activeJobs = countActiveJobs(jobs);
+        PerformanceTotals performance = computePerformanceTotals(users);
 
         return DashboardSummary.builder()
                 .totalUsers(users.size())
@@ -54,7 +55,8 @@ public class AdminService {
                 .activeJobs(activeJobs)
                 .inactiveJobs(jobs.size() - activeJobs)
                 .monthlyAttendanceRate(computeMonthlyAttendanceRate())
-                .averagePerformanceRating(computeAveragePerformanceRating(users))
+                .averagePerformanceRating(roundAverageRating(performance))
+                .totalReviews(performance.reviewCount())
                 .generatedAt(LocalDateTime.now())
                 .build();
     }
@@ -72,6 +74,7 @@ public class AdminService {
         List<UserInfo> users = getUsers();
         List<JobPostResponse> jobs = getJobs();
         long activeJobs = countActiveJobs(jobs);
+        PerformanceTotals performance = computePerformanceTotals(users);
 
         return DashboardAnalytics.builder()
                 .usersByRole(users.stream().collect(
@@ -81,7 +84,8 @@ public class AdminService {
                 .activeJobs(activeJobs)
                 .inactiveJobs(jobs.size() - activeJobs)
                 .monthlyAttendanceRate(computeMonthlyAttendanceRate())
-                .averagePerformanceRating(computeAveragePerformanceRating(users))
+                .averagePerformanceRating(roundAverageRating(performance))
+                .totalReviews(performance.reviewCount())
                 .build();
     }
 
@@ -122,12 +126,16 @@ public class AdminService {
     }
 
     /**
-     * Average performance rating across all workers (1-5), rounded to two
-     * decimal places. {@code null} when no worker has a rating yet. The user
-     * list is passed in (already fetched for the summary) to avoid a second
-     * auth-service round trip.
+     * Aggregated performance figures across all workers, computed in a single
+     * pass so the per-worker downstream calls are not duplicated.
+     *
+     * @param ratingSum   total of the workers' individual average ratings
+     * @param ratedWorkers workers whose average rating is non-null
+     * @param reviewCount total reviews across all workers (rated or not)
      */
-    private Double computeAveragePerformanceRating(List<UserInfo> users) {
+    private record PerformanceTotals(double ratingSum, int ratedWorkers, long reviewCount) {}
+
+    private PerformanceTotals computePerformanceTotals(List<UserInfo> users) {
         List<Long> workerIds = users.stream()
                 .filter(user -> user.getRole() == UserRole.WORKER)
                 .map(UserInfo::getId)
@@ -135,20 +143,33 @@ public class AdminService {
 
         double ratingSum = 0;
         int ratedWorkers = 0;
+        long reviewCount = 0;
 
         for (Long workerId : workerIds) {
             WorkerPerformanceReport report = downstreamService.fetchWorkerPerformance(workerId);
-            if (report == null || report.getAverageRating() == null) {
+            if (report == null) {
+                continue;
+            }
+            reviewCount += report.getReviewCount();
+            if (report.getAverageRating() == null) {
                 continue;
             }
             ratingSum += report.getAverageRating();
             ratedWorkers++;
         }
 
-        if (ratedWorkers == 0) {
+        return new PerformanceTotals(ratingSum, ratedWorkers, reviewCount);
+    }
+
+    /**
+     * Average performance rating across all workers (1-5), rounded to two
+     * decimal places. {@code null} when no worker has a rating yet.
+     */
+    private Double roundAverageRating(PerformanceTotals totals) {
+        if (totals.ratedWorkers() == 0) {
             return null;
         }
-        return Math.round((ratingSum / ratedWorkers) * 100.0) / 100.0;
+        return Math.round((totals.ratingSum() / totals.ratedWorkers()) * 100.0) / 100.0;
     }
 
     /**

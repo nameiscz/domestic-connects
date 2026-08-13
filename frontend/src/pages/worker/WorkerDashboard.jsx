@@ -12,13 +12,10 @@ import StatCard from '../../components/StatCard';
 //   • Open jobs available   → real   GET /api/jobs
 //   • Salary this month     → real   GET /api/payroll/{id}/history?month=&year=
 //   • Attendance this month → real   GET /api/attendance/worker/{id}?month=&year=
-//   • Jobs applied          → sample — the backend doesn't expose a per-worker
-//                                      assignment list yet (JobPostResponse has
-//                                      no workerId), so this card uses a static
-//                                      placeholder value for now.
+//   • Jobs applied          → real   GET /api/jobs — postings whose persisted
+//                                      workerId matches the signed-in worker
+//                                      (workers "apply" by self-assigning).
 // ---------------------------------------------------------------------------
-
-const SAMPLE_JOBS_APPLIED = 3;
 
 export default function WorkerDashboard() {
   const { currentUser } = useAuth();
@@ -69,6 +66,9 @@ export default function WorkerDashboard() {
       setStats({
         period,
         openJobs: jobs.filter((job) => job.status === 'OPEN').length,
+        appliedJobs: jobs.filter(
+          (job) => String(job.workerId) === String(workerId)
+        ).length,
         salaryThisMonth: salaryRecords[0]?.grossSalary ?? null,
         attendance: attendanceSummary,
       });
@@ -142,10 +142,15 @@ export default function WorkerDashboard() {
                 <StatCard
                   emoji="🧾"
                   label="Jobs applied"
-                  value={SAMPLE_JOBS_APPLIED}
-                  note="Sample data — live tracking coming soon"
+                  value={stats?.appliedJobs ?? '—'}
+                  note={
+                    stats?.appliedJobs == null
+                      ? 'Jobs you are assigned to'
+                      : stats.appliedJobs === 0
+                        ? 'Browse the jobs page to apply'
+                        : 'Jobs you are assigned to'
+                  }
                   accent="primary"
-                  sample
                 />
                 <StatCard
                   emoji="💰"

@@ -102,6 +102,74 @@ describe('MyPerformance', () => {
     expect(screen.getAllByText('1')).toHaveLength(2);
   });
 
+  it('requests the paginated history endpoint for the current page', async () => {
+    axiosInstance.get.mockResolvedValue({ data: REPORT });
+    renderPage();
+
+    expect(await screen.findByText('4.5')).toBeInTheDocument();
+    expect(axiosInstance.get).toHaveBeenCalledWith(
+      '/api/performance/worker/11/history?page=0&size=10',
+      expect.anything()
+    );
+  });
+
+  it('shows a disabled pager on a single-page history', async () => {
+    axiosInstance.get.mockResolvedValue({ data: REPORT }); // totalPages: 1
+    renderPage();
+
+    await screen.findByText('4.5');
+    expect(screen.getByText('Page 1 of 1')).toBeInTheDocument();
+    expect(screen.getByText('Showing 1–2 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /next/i })).toBeDisabled();
+  });
+
+  it('navigates between pages with the pager', async () => {
+    const reviewC = {
+      id: 303,
+      workerId: 11,
+      jobId: 15,
+      rating: 3,
+      remarks: 'Needs improvement.',
+      reviewedBy: 'Employer Three',
+      createdAt: '2026-06-01T09:00:00',
+    };
+    const makePage = (pageNo, reviews) => ({
+      ...REPORT,
+      page: pageNo,
+      size: reviews.length,
+      totalPages: 3,
+      totalElements: 22,
+      reviews,
+    });
+    axiosInstance.get.mockImplementation((url) => {
+      const pageParam = Number(/[?&]page=(\d+)/.exec(url)?.[1] ?? 0);
+      return Promise.resolve({
+        data: makePage(pageParam, pageParam === 1 ? [reviewC] : REPORT.reviews),
+      });
+    });
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('4.5');
+    expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled();
+    const nextButton = screen.getByRole('button', { name: /next/i });
+    expect(nextButton).toBeEnabled();
+
+    await user.click(nextButton);
+
+    // Page 2 renders its own reviews and Previous becomes enabled.
+    expect(await screen.findByText('Needs improvement.')).toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /previous/i })).toBeEnabled();
+
+    // Back to page 1.
+    await user.click(screen.getByRole('button', { name: /previous/i }));
+    expect(await screen.findByText('Excellent work, very punctual.')).toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
+  });
+
   it('shows an empty state when the worker has no reviews', async () => {
     axiosInstance.get.mockResolvedValue({ data: EMPTY_REPORT });
     renderPage();
