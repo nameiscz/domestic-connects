@@ -31,9 +31,9 @@ Broker, group and deserializer settings live in `config-repo/notification-servic
 To create the topics (default: 1 partition, no replication for local dev):
 
 ```bash
-kafka-topics.sh --bootstrap-server localhost:9092 --create --topic job-assigned --partitions 1
-kafka-topics.sh --bootstrap-server localhost:9092 --create --topic salary-slip-generated --partitions 1
-kafka-topics.sh --bootstrap-server localhost:9092 --create --topic performance-reviewed --partitions 1
+kafka-topics.sh --bootstrap-server localhost:29092 --create --topic job-assigned --partitions 1
+kafka-topics.sh --bootstrap-server localhost:29092 --create --topic salary-slip-generated --partitions 1
+kafka-topics.sh --bootstrap-server localhost:29092 --create --topic performance-reviewed --partitions 1
 ```
 
 ## Run
@@ -44,5 +44,5 @@ mvn spring-boot:run -pl notification-service
 
 Requires config-server (port 8888), eureka-server (8761), MySQL
 (`domestic_connects_notifications` per the config-repo default; `notification_db`
-under Docker) and Kafka (localhost:9092 locally; `localhost:29092` on the Docker
-host) to be up.
+under Docker) and Kafka (default `localhost:29092`, the Docker host port; override
+with `KAFKA_BOOTSTRAP_SERVERS=localhost:9092` if you run a native broker on 9092).

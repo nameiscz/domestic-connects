@@ -72,11 +72,13 @@ broker at `localhost:29092`; in-network services use `kafka:9092`.
 >   mvn spring-boot:run -pl job-service
 > ```
 >
-> For Kafka the in-network `kafka:9092` address is not resolvable on the host —
-> override the bootstrap servers instead:
+> Kafka needs no override: the config-repo local defaults already point at
+> `localhost:29092`, exactly the port the Docker broker maps to the host
+> (in-network services use `kafka:9092`). Only if you run a *native* Kafka on
+> 9092 do you need to override it:
 >
 > ```bash
-> KAFKA_BOOTSTRAP_SERVERS=localhost:29092 mvn spring-boot:run -pl notification-service
+> KAFKA_BOOTSTRAP_SERVERS=localhost:9092 mvn spring-boot:run -pl notification-service
 > ```
 
 ## Frontend (React)
