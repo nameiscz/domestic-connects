@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import { useToasts } from '../../hooks/useToasts';
+import { useClientTable } from '../../hooks/useClientTable';
 import ToastStack from '../../components/ToastStack';
+import TableToolbar from '../../components/TableToolbar';
 
 const ROLE_BADGE = {
   WORKER: 'primary',
@@ -9,15 +11,20 @@ const ROLE_BADGE = {
   ADMIN: 'danger',
 };
 
+// Fields matched by the table search (module-level so the hook memo is stable).
+const USER_SEARCH_FIELDS = ['name', 'email', 'role'];
+
 /**
- * AdminUsers — platform-wide user management.
+ * UserManagement — platform-wide user management (admin).
  *
- * The list comes from the admin-service aggregator (GET /api/admin/users,
- * wrapped in ApiResponse), while activate/deactivate are written straight to
- * auth-service via the gateway (PATCH /api/auth/admin/users/{id}/activate and
- * .../deactivate, ADMIN-only endpoints).
+ * Fetches the full user list from the admin-service aggregator
+ * (GET /admin-service/admin/users, exposed through the gateway as
+ * GET /api/admin/users, ApiResponse-wrapped) and lets an ADMIN activate or
+ * deactivate accounts via the auth-service PATCH endpoints
+ * (PATCH /api/auth/admin/users/{id}/activate and .../deactivate, ADMIN-only).
+ * The row's status is updated in place on success.
  */
-export default function AdminUsers() {
+export default function UserManagement() {
   const { toasts, pushToast, dismissToast } = useToasts();
 
   const [users, setUsers] = useState([]);
@@ -25,6 +32,18 @@ export default function AdminUsers() {
   const [loadError, setLoadError] = useState('');
   const [togglingId, setTogglingId] = useState(null);
   const [refresh, setRefresh] = useState(0);
+
+  const {
+    query,
+    changeQuery,
+    page,
+    setPage,
+    pageSize,
+    changePageSize,
+    filteredCount,
+    totalPages,
+    pageRows,
+  } = useClientTable(users, { searchFields: USER_SEARCH_FIELDS });
 
   const loadUsers = useCallback(async (signal) => {
     setLoading(true);
@@ -55,6 +74,7 @@ export default function AdminUsers() {
     try {
       const action = user.active ? 'deactivate' : 'activate';
       await axiosInstance.patch(`/api/auth/admin/users/${user.id}/${action}`);
+      // Update the row status locally on success.
       setUsers((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, active: !u.active } : u))
       );
@@ -75,6 +95,7 @@ export default function AdminUsers() {
   };
 
   const activeCount = users.filter((u) => u.active).length;
+  const showToolbar = !loading && !loadError && users.length > 0;
 
   return (
     <section aria-busy={loading || Boolean(togglingId)}>
@@ -99,8 +120,22 @@ export default function AdminUsers() {
         </button>
       </div>
 
+      {showToolbar && (
+        <TableToolbar
+          query={query}
+          onQueryChange={changeQuery}
+          searchPlaceholder="Search by name, email or role…"
+          count={filteredCount}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={changePageSize}
+        />
+      )}
+
       {loading ? (
-        <div className="text-center py-5" data-testid="admin-users-loading">
+        <div className="text-center py-5" data-testid="user-management-loading">
           <div className="spinner-border text-danger" role="status">
             <span className="visually-hidden">Loading users…</span>
           </div>
@@ -128,6 +163,16 @@ export default function AdminUsers() {
             </p>
           </div>
         </div>
+      ) : filteredCount === 0 ? (
+        <div className="card shadow-sm">
+          <div className="card-body text-center py-5">
+            <p className="fs-4 mb-1">🔍</p>
+            <h5 className="card-title">No matching users</h5>
+            <p className="card-text text-muted mb-0">
+              Nothing matches &quot;{query}&quot;. Try a different search.
+            </p>
+          </div>
+        </div>
       ) : (
         <div className="card shadow-sm">
           <div className="table-responsive">
@@ -144,7 +189,7 @@ export default function AdminUsers() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => {
+                {pageRows.map((user) => {
                   const isToggling = togglingId === user.id;
                   return (
                     <tr key={user.id}>
@@ -161,7 +206,7 @@ export default function AdminUsers() {
                         {user.active ? (
                           <span className="badge bg-success">Active</span>
                         ) : (
-                          <span className="badge bg-danger">Deactivated</span>
+                          <span className="badge bg-danger">Inactive</span>
                         )}
                       </td>
                       <td className="text-end">

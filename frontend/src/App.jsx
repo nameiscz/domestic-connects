@@ -19,8 +19,8 @@ import SubmitReview from './pages/SubmitReview';
 import ManageReviews from './pages/ManageReviews';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminAttendance from './pages/admin/AdminAttendance';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminJobs from './pages/admin/AdminJobs';
+import UserManagement from './pages/admin/UserManagement';
+import JobManagement from './pages/admin/JobManagement';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import PlaceholderPage from './components/PlaceholderPage';
 
@@ -79,8 +79,8 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="jobs" element={<AdminJobs />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="jobs" element={<JobManagement />} />
             <Route path="attendance" element={<AdminAttendance />} />
             <Route path="reviews" element={<ManageReviews />} />
             <Route path="reviews/new" element={<SubmitReview />} />
