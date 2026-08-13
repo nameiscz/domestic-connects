@@ -5,6 +5,7 @@ import { formatDate } from '../../utils/jobFormat';
 import StatCard from '../../components/StatCard';
 
 const STAR_COUNT = 5;
+const PAGE_SIZE = 10;
 
 /** Renders a 1–5 star row (filled ★ for the rating, dim ☆ for the rest). */
 function Stars({ rating }) {
@@ -18,11 +19,14 @@ function Stars({ rating }) {
 }
 
 /**
- * MyPerformance — the logged-in worker's own performance history
- * (GET /api/performance/worker/{id} via the API gateway). The backend only
- * permits WORKER callers to read their own reviews, so no picker is needed.
- * Payload is a WorkerPerformanceReport: reviewCount, averageRating,
- * reviews[] and a ratingDistribution histogram covering 1–5.
+ * MyPerformance — the logged-in worker's own performance history, fetched
+ * page by page from the paginated history endpoint
+ * (GET /api/performance/worker/{id}/history?page=&size= via the API
+ * gateway). The backend only permits WORKER callers to read their own
+ * reviews, so no picker is needed. Every page carries the full-history
+ * summary (reviewCount, averageRating, ratingDistribution) plus the
+ * requested slice of reviews[] and pagination metadata (page, totalPages,
+ * totalElements).
  */
 export default function MyPerformance() {
   const { currentUser } = useAuth();
@@ -32,6 +36,7 @@ export default function MyPerformance() {
   const [loading, setLoading] = useState(Boolean(workerId));
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     if (!workerId) {
@@ -46,7 +51,7 @@ export default function MyPerformance() {
       setError('');
       try {
         const { data } = await axiosInstance.get(
-          `/api/performance/worker/${workerId}`,
+          `/api/performance/worker/${workerId}/history?page=${page}&size=${PAGE_SIZE}`,
           { signal: controller.signal }
         );
         setReport(data);
@@ -63,11 +68,13 @@ export default function MyPerformance() {
     })();
 
     return () => controller.abort();
-  }, [workerId, refresh]);
+  }, [workerId, page, refresh]);
 
   const reviews = report?.reviews ?? [];
   const distribution = report?.ratingDistribution ?? [];
   const maxCount = Math.max(1, ...distribution.map((d) => d.count));
+  const firstOnPage = reviews.length === 0 ? 0 : page * PAGE_SIZE + 1;
+  const lastOnPage = reviews.length === 0 ? 0 : page * PAGE_SIZE + reviews.length;
 
   return (
     <section aria-busy={loading}>
@@ -181,8 +188,11 @@ export default function MyPerformance() {
 
           {/* Review history */}
           <div className="card shadow-sm">
-            <div className="card-header bg-white">
+            <div className="card-header bg-white d-flex flex-wrap align-items-center justify-content-between gap-2">
               <h4 className="h6 mb-0">Review history</h4>
+              <span className="text-muted small">
+                Showing {firstOnPage}–{lastOnPage} of {report.totalElements}
+              </span>
             </div>
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0">
@@ -214,6 +224,37 @@ export default function MyPerformance() {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="card-footer bg-white d-flex justify-content-center">
+              <nav aria-label="Review history pages">
+                <ul className="pagination pagination-sm mb-0">
+                  <li className={`page-item ${page === 0 ? 'disabled' : ''}`}>
+                    <button
+                      type="button"
+                      className="page-link"
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                    >
+                      Previous
+                    </button>
+                  </li>
+                  <li className="page-item disabled">
+                    <span className="page-link">
+                      Page {page + 1} of {report.totalPages}
+                    </span>
+                  </li>
+                  <li className={`page-item ${page + 1 >= report.totalPages ? 'disabled' : ''}`}>
+                    <button
+                      type="button"
+                      className="page-link"
+                      onClick={() => setPage((p) => Math.min(report.totalPages - 1, p + 1))}
+                      disabled={page + 1 >= report.totalPages}
+                    >
+                      Next
+                    </button>
+                  </li>
+                </ul>
+              </nav>
             </div>
           </div>
         </>

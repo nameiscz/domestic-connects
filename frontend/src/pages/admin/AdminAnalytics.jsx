@@ -115,7 +115,11 @@ export default function AdminAnalytics() {
               emoji="⭐"
               label="Avg. rating"
               value={formatRating(analytics?.averagePerformanceRating)}
-              note="Across workers"
+              note={
+                analytics?.totalReviews == null
+                  ? 'Across workers'
+                  : `${analytics.totalReviews} review${analytics.totalReviews === 1 ? '' : 's'} across workers`
+              }
               accent="warning"
             />
           </div>

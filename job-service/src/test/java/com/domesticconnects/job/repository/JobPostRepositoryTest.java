@@ -73,4 +73,20 @@ class JobPostRepositoryTest {
         assertThat(result.get().isDeleted()).isFalse();
         assertThat(result.get().getCreatedAt()).isNotNull();
     }
+
+    @Test
+    @DisplayName("workerId is null while OPEN and persists once the post is assigned")
+    void workerId_persistsWhenAssigned() {
+        JobPost post = jobPostRepository.save(createJobPost("Assigned job"));
+        assertThat(post.getWorkerId()).isNull();
+
+        post.setStatus(JobStatus.ASSIGNED);
+        post.setWorkerId(42L);
+        jobPostRepository.save(post);
+
+        Optional<JobPost> result = jobPostRepository.findActiveById(post.getId());
+        assertThat(result).isPresent();
+        assertThat(result.get().getStatus()).isEqualTo(JobStatus.ASSIGNED);
+        assertThat(result.get().getWorkerId()).isEqualTo(42L);
+    }
 }

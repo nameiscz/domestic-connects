@@ -27,6 +27,13 @@ public class JobPost {
     @Column(nullable = false)
     private Long employerId;
 
+    /**
+     * Worker assigned to this post — null while the post is still OPEN and
+     * set once a worker is assigned (status moves to ASSIGNED).
+     */
+    @Column(name = "worker_id")
+    private Long workerId;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal wagePerDay;
 

@@ -27,4 +27,6 @@ public class DashboardAnalytics {
     private long inactiveJobs;
     private Double monthlyAttendanceRate;
     private Double averagePerformanceRating;
+    /** Total performance reviews submitted across all workers. */
+    private long totalReviews;
 }

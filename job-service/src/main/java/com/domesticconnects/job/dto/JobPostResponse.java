@@ -19,6 +19,8 @@ public class JobPostResponse {
     private String title;
     private String description;
     private Long employerId;
+    /** Worker assigned to the post, or {@code null} while it is still OPEN. */
+    private Long workerId;
     private BigDecimal wagePerDay;
     private String location;
     private JobStatus status;
