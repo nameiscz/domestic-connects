@@ -48,6 +48,30 @@ describe('Register', () => {
     expect(screen.queryByRole('option', { name: 'Admin' })).not.toBeInTheDocument();
   });
 
+  describe('password visibility toggle', () => {
+    it('reveals and hides the password with the toggle button', async () => {
+      const user = userEvent.setup();
+      renderRegister();
+
+      const input = screen.getByLabelText('Password');
+      expect(input).toHaveAttribute('type', 'password');
+
+      await user.click(screen.getByRole('button', { name: /show password/i }));
+      expect(input).toHaveAttribute('type', 'text');
+      expect(screen.getByRole('button', { name: /hide password/i })).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      );
+
+      await user.click(screen.getByRole('button', { name: /hide password/i }));
+      expect(input).toHaveAttribute('type', 'password');
+      expect(screen.getByRole('button', { name: /show password/i })).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      );
+    });
+  });
+
   describe('validation', () => {
     it('shows inline errors when submitting an empty form', async () => {
       const user = userEvent.setup();

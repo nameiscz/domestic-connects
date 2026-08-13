@@ -188,7 +188,9 @@ export default function Notifications() {
                         {formatDate(notification.createdAt)}
                       </span>
                     </div>
-                    <p className="mb-0 mt-1">{notification.message}</p>
+                    <p className={`mb-0 mt-1${unread ? ' fw-semibold' : ''}`}>
+                      {notification.message}
+                    </p>
                   </div>
                   {unread && (
                     <button

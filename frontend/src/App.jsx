@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { ROLE_HOME } from './constants/roles';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ResetPassword from './pages/ResetPassword';
 import NotFound from './pages/NotFound';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import JobBrowse from './pages/worker/JobBrowse';
@@ -22,7 +23,8 @@ import AdminAttendance from './pages/admin/AdminAttendance';
 import UserManagement from './pages/admin/UserManagement';
 import JobManagement from './pages/admin/JobManagement';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
-import PlaceholderPage from './components/PlaceholderPage';
+import AuditLogs from './pages/admin/AuditLogs';
+import PageTitle from './components/PageTitle';
 
 /** Redirects "/" to the signed-in user's dashboard (or /login). */
 function HomeRedirect() {
@@ -34,12 +36,15 @@ function HomeRedirect() {
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Keeps the browser tab title in sync with the current route. */}
+      <PageTitle />
       <AuthProvider>
         <Routes>
           {/* Public */}
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Role-gated dashboards (nested routes render via <Outlet />) */}
           <Route
@@ -85,15 +90,7 @@ export default function App() {
             <Route path="reviews" element={<ManageReviews />} />
             <Route path="reviews/new" element={<SubmitReview />} />
             <Route path="analytics" element={<AdminAnalytics />} />
-            <Route
-              path="audit-logs"
-              element={
-                <PlaceholderPage
-                  title="Audit Logs"
-                  description="Platform-wide audit trails will appear here once the audit-log view is built."
-                />
-              }
-            />
+            <Route path="audit-logs" element={<AuditLogs />} />
             {/* Other /admin/* URLs keep showing the admin workspace overview. */}
             <Route path="*" element={null} />
           </Route>

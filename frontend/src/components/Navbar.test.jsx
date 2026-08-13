@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Navbar from './Navbar';
@@ -7,6 +7,18 @@ import Navbar from './Navbar';
 // Mock the auth context so tests control the signed-in user directly.
 const { useAuth } = vi.hoisted(() => ({ useAuth: vi.fn() }));
 vi.mock('../context/AuthContext', () => ({ useAuth }));
+
+// Mock axios so the unread-count hook is fully controlled.
+const { default: axiosInstance } = vi.hoisted(() => ({
+  default: { get: vi.fn() },
+}));
+vi.mock('../api/axiosInstance', () => ({ default: axiosInstance }));
+
+// Worker notifications returned by GET /api/notifications/{userId}.
+const NOTIFICATIONS = [
+  { id: 401, message: 'Job assigned', type: 'JOB_ASSIGNED', isRead: false },
+  { id: 402, message: 'Salary slip ready', type: 'SALARY_SLIP_GENERATED', isRead: true },
+];
 
 let logoutMock;
 
@@ -40,6 +52,9 @@ const renderNavbar = ({
 describe('Navbar', () => {
   beforeEach(() => {
     logoutMock = vi.fn();
+    axiosInstance.get.mockReset();
+    // Default: no unread notifications, so badge-free navbars stay quiet.
+    axiosInstance.get.mockResolvedValue({ data: [] });
   });
 
   describe('role-based links', () => {
@@ -188,6 +203,55 @@ describe('Navbar', () => {
       expect(screen.queryByRole('link', { name: 'Jobs' })).not.toBeInTheDocument();
       expect(screen.queryByText('WORKER')).not.toBeInTheDocument();
       expect(screen.queryByText('Ana')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('notification bell badge', () => {
+    it('shows the unread count on the bell for workers with unread items', async () => {
+      axiosInstance.get.mockResolvedValue({ data: NOTIFICATIONS });
+      renderNavbar({ role: 'WORKER' });
+
+      const bell = await screen.findByRole('link', { name: 'Notifications, 1 unread' });
+      expect(bell).toHaveAttribute('href', '/worker/notifications');
+      expect(screen.getByTestId('unread-notifications-badge')).toHaveTextContent('1');
+    });
+
+    it('hides the badge when there are no unread notifications', async () => {
+      renderNavbar({ role: 'WORKER' });
+
+      const bell = await screen.findByRole('link', { name: 'Notifications, 0 unread' });
+      expect(bell).toHaveAttribute('href', '/worker/notifications');
+      expect(screen.queryByTestId('unread-notifications-badge')).not.toBeInTheDocument();
+    });
+
+    it('caps the badge at 99+', async () => {
+      axiosInstance.get.mockResolvedValue({
+        data: Array.from({ length: 120 }, (_, i) => ({
+          id: i + 1,
+          message: `Notification ${i + 1}`,
+          type: 'JOB_ASSIGNED',
+          isRead: false,
+        })),
+      });
+      renderNavbar({ role: 'WORKER' });
+
+      expect(
+        await waitFor(() =>
+          expect(screen.getByTestId('unread-notifications-badge')).toHaveTextContent('99+')
+        )
+      ).toBeTruthy();
+    });
+
+    it('does not render a bell for employers', () => {
+      renderNavbar({ role: 'EMPLOYER' });
+      expect(screen.queryByRole('link', { name: /notifications/i })).not.toBeInTheDocument();
+      expect(axiosInstance.get).not.toHaveBeenCalled();
+    });
+
+    it('does not render a bell for admins', () => {
+      renderNavbar({ role: 'ADMIN' });
+      expect(screen.queryByRole('link', { name: /notifications/i })).not.toBeInTheDocument();
+      expect(axiosInstance.get).not.toHaveBeenCalled();
     });
   });
 

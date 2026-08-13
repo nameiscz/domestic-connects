@@ -217,18 +217,6 @@ export default function JobBrowse() {
         </div>
       )}
 
-      {/* Small scoped styles: card hover lift + clamped description */}
-      <style>{`
-        .job-card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
-        .job-card:hover { transform: translateY(-4px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.12) !important; }
-        .job-description {
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          min-height: calc(1rem * 1.5 * 3);
-        }
-      `}</style>
     </section>
   );
 }
