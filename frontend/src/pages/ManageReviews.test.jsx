@@ -21,6 +21,13 @@ const WORKERS = [
   { id: 12, name: 'Ben', email: 'ben@example.com', role: 'WORKER', active: true },
 ];
 
+// Employer 5's ASSIGNED postings — the workers they have hired (Ana, Ben).
+const JOBS = [
+  { id: 1, title: 'Cook', employerId: 5, wagePerDay: 600, status: 'ASSIGNED', workerId: 11 },
+  { id: 2, title: 'Driver', employerId: 5, wagePerDay: 700, status: 'ASSIGNED', workerId: 12 },
+  { id: 3, title: 'Other Employer Job', employerId: 9, wagePerDay: 400, status: 'ASSIGNED', workerId: 11 },
+];
+
 const REPORT = {
   workerId: 11,
   reviewCount: 2,
@@ -79,11 +86,15 @@ const renderPage = (currentUser = EMPLOYER_USER) => {
   );
 };
 
-// Default mock: workers (auth envelope) + the performance report.
-const mockData = ({ report = REPORT } = {}) => {
+// Default mock: workers (auth envelope) + the employer's jobs + the
+// performance report.
+const mockData = ({ report = REPORT, jobs = JOBS } = {}) => {
   axiosInstance.get.mockImplementation((url) => {
     if (url === '/api/auth/workers') {
       return Promise.resolve({ data: { data: WORKERS } });
+    }
+    if (url === '/api/jobs') {
+      return Promise.resolve({ data: jobs });
     }
     if (url.startsWith('/api/performance/worker/')) {
       return Promise.resolve({ data: report });
@@ -122,6 +133,33 @@ describe('ManageReviews', () => {
     expect(screen.getByText('Employer One')).toBeInTheDocument();
     // Table header + one row per review.
     expect(screen.getAllByRole('row')).toHaveLength(3);
+  });
+
+  it('lists only workers assigned to the employer’s job posts', async () => {
+    // Carol (13) has no ASSIGNED job with employer 5 — she must not appear.
+    mockData({
+      workers: [
+        ...WORKERS,
+        { id: 13, name: 'Carol', email: 'carol@example.com', role: 'WORKER', active: true },
+      ],
+    });
+    renderPage();
+
+    const workerSelect = await screen.findByLabelText('Worker');
+    const labels = within(workerSelect)
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(labels.join(' | ')).toContain('Ana (ana@example.com)');
+    expect(labels.join(' | ')).toContain('Ben (ben@example.com)');
+    expect(labels.join(' | ')).not.toContain('Carol');
+  });
+
+  it('shows a hint when the employer has no assigned workers yet', async () => {
+    // No ASSIGNED postings — nobody hired yet, so there is nothing to manage.
+    mockData({ jobs: [] });
+    renderPage();
+
+    expect(await screen.findByText(/no assigned workers yet/i)).toBeInTheDocument();
   });
 
   it('shows an empty state with a submit-review shortcut when the worker has no reviews', async () => {
@@ -236,6 +274,9 @@ describe('ManageReviews', () => {
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/auth/workers') {
         return Promise.resolve({ data: { data: WORKERS } });
+      }
+      if (url === '/api/jobs') {
+        return Promise.resolve({ data: JOBS });
       }
       if (url.startsWith('/api/performance/worker/')) {
         reportCalls += 1;

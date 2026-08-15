@@ -22,6 +22,7 @@
         Spring Boot Microservices that helps families and domestic workers.</description>
 
     <modules>
+        <module>common</module>
         <module>eureka-server</module>
         <module>config-server</module>
         <module>api-gateway</module>

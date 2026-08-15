@@ -1,13 +1,20 @@
 package com.domesticconnects.auth.service;
 
 import com.domesticconnects.auth.dto.*;
+import com.domesticconnects.auth.entity.PasswordResetToken;
 import com.domesticconnects.auth.entity.Role;
 import com.domesticconnects.auth.entity.User;
 import com.domesticconnects.auth.exception.ResourceNotFoundException;
 import com.domesticconnects.auth.exception.TokenRefreshException;
 import com.domesticconnects.auth.exception.UserAlreadyExistsException;
+import com.domesticconnects.auth.repository.PasswordResetTokenRepository;
 import com.domesticconnects.auth.repository.UserRepository;
 import com.domesticconnects.auth.security.JwtUtils;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.HexFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,6 +46,9 @@ class AuthServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -52,11 +62,26 @@ class AuthServiceTest {
     @Captor
     private ArgumentCaptor<User> userCaptor;
 
+    @Captor
+    private ArgumentCaptor<PasswordResetToken> resetTokenCaptor;
+
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, authenticationManager,
-                jwtUtils);
+        authService = new AuthService(userRepository, passwordResetTokenRepository,
+                passwordEncoder, authenticationManager, jwtUtils);
         ReflectionTestUtils.setField(authService, "accessTokenExpiration", 900000L);
+        ReflectionTestUtils.setField(authService, "resetTokenExpirationMinutes", 30L);
+        ReflectionTestUtils.setField(authService, "frontendBaseUrl", "http://localhost:5173");
+    }
+
+    private static String sha256Hex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(
+                    digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
     }
 
     private User createTestUser(Long id, String email, Role role, boolean active) {
@@ -161,6 +186,108 @@ class AuthServiceTest {
             verify(passwordEncoder).encode("plain-password");
             verify(userRepository).save(userCaptor.capture());
             assertThat(userCaptor.getValue().getPassword()).isEqualTo("bcrypt-hashed");
+        }
+    }
+
+    @Nested
+    @DisplayName("Password Reset")
+    class PasswordReset {
+
+        @Test
+        @DisplayName("should issue a hashed reset token and reset link for an existing user")
+        void shouldIssueResetToken() {
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
+            when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
+
+            ApiResponse<PasswordResetResponse> response =
+                    authService.forgotPassword("alice@example.com");
+
+            assertThat(response.isSuccess()).isTrue();
+            PasswordResetResponse data = response.getData();
+            assertThat(data).isNotNull();
+            assertThat(data.getToken()).isNotBlank();
+            assertThat(data.getResetLink())
+                    .isEqualTo("http://localhost:5173/reset-password?token=" + data.getToken());
+            assertThat(data.getExpiresInMinutes()).isEqualTo(30);
+
+            verify(passwordResetTokenRepository).deleteByUserId(1L);
+            verify(passwordResetTokenRepository).save(resetTokenCaptor.capture());
+            PasswordResetToken saved = resetTokenCaptor.getValue();
+            assertThat(saved.getUserId()).isEqualTo(1L);
+            // Only the digest is stored — never the raw token.
+            assertThat(saved.getTokenHash()).isEqualTo(sha256Hex(data.getToken()));
+            assertThat(saved.getTokenHash()).isNotEqualTo(data.getToken());
+        }
+
+        @Test
+        @DisplayName("should not reveal whether an email is registered")
+        void shouldNotRevealUnknownEmail() {
+            when(userRepository.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
+
+            ApiResponse<PasswordResetResponse> response =
+                    authService.forgotPassword("ghost@example.com");
+
+            assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getData()).isNull();
+            verify(passwordResetTokenRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should reset the password and delete the token")
+        void shouldResetPassword() {
+            PasswordResetToken resetToken = PasswordResetToken.builder()
+                    .id(10L)
+                    .userId(1L)
+                    .tokenHash(sha256Hex("raw-token"))
+                    .expiresAt(LocalDateTime.now().plusMinutes(30))
+                    .build();
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
+
+            when(passwordResetTokenRepository.findByTokenHash(sha256Hex("raw-token")))
+                    .thenReturn(Optional.of(resetToken));
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(passwordEncoder.encode("Newpass1!")).thenReturn("new-bcrypt");
+
+            ApiResponse<Void> response = authService.resetPassword("raw-token", "Newpass1!");
+
+            assertThat(response.isSuccess()).isTrue();
+            verify(passwordEncoder).encode("Newpass1!");
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getPassword()).isEqualTo("new-bcrypt");
+            verify(passwordResetTokenRepository).delete(resetToken);
+        }
+
+        @Test
+        @DisplayName("should reject an expired token")
+        void shouldRejectExpiredToken() {
+            PasswordResetToken expired = PasswordResetToken.builder()
+                    .id(11L)
+                    .userId(1L)
+                    .tokenHash(sha256Hex("old-token"))
+                    .expiresAt(LocalDateTime.now().minusMinutes(1))
+                    .build();
+            when(passwordResetTokenRepository.findByTokenHash(sha256Hex("old-token")))
+                    .thenReturn(Optional.of(expired));
+
+            assertThatThrownBy(() -> authService.resetPassword("old-token", "Newpass1!"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Invalid or expired");
+
+            verify(userRepository, never()).save(any());
+            verify(passwordResetTokenRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("should reject an unknown or already-used token")
+        void shouldRejectUnknownToken() {
+            when(passwordResetTokenRepository.findByTokenHash(anyString()))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.resetPassword("unknown-token", "Newpass1!"))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Invalid or expired");
+
+            verify(userRepository, never()).save(any());
         }
     }
 

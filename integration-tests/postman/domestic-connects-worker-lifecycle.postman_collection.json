@@ -28,7 +28,7 @@
     },
     {
       "key": "workerPassword",
-      "value": "Passw0rd!123"
+      "value": "Passw0rd!"
     },
     {
       "key": "employerName",
@@ -40,7 +40,7 @@
     },
     {
       "key": "employerPassword",
-      "value": "Passw0rd!123"
+      "value": "Passw0rd!"
     },
     {
       "key": "adminName",
@@ -52,7 +52,7 @@
     },
     {
       "key": "adminPassword",
-      "value": "Passw0rd!123"
+      "value": "Passw0rd!"
     },
     {
       "key": "workerId",
@@ -119,13 +119,13 @@
           "  setVar('year',year);",
           "  setVar('workerName','Worker '+stamp);",
           "  setVar('workerEmail','worker.'+stamp+'@it.domesticconnects.local');",
-          "  setVar('workerPassword','Passw0rd!123');",
+          "  setVar('workerPassword','Passw0rd!');",
           "  setVar('employerName','Employer '+stamp);",
           "  setVar('employerEmail','employer.'+stamp+'@it.domesticconnects.local');",
-          "  setVar('employerPassword','Passw0rd!123');",
+          "  setVar('employerPassword','Passw0rd!');",
           "  setVar('adminName','Admin '+stamp);",
           "  setVar('adminEmail','admin.'+stamp+'@it.domesticconnects.local');",
-          "  setVar('adminPassword','Passw0rd!123');",
+          "  setVar('adminPassword','Passw0rd!');",
           "}"
         ]
       }
@@ -769,7 +769,7 @@
           "response": []
         },
         {
-          "name": "Employer assigns worker to the job",
+          "name": "Employer assigns worker to the job (after profile review)",
           "event": [
             {
               "listen": "test",
@@ -778,7 +778,45 @@
                 "exec": [
                   "const json=pm.response.json();",
                   "pm.test('Assignment returns 200',()=>pm.expect(pm.response.code).to.eql(200));",
-                  "pm.test('Job status moves to ASSIGNED',()=>pm.expect(json.status).to.eql('ASSIGNED'));"
+                  "pm.test('Job status moves to ASSIGNED',()=>pm.expect(json.status).to.eql('ASSIGNED'));",
+                  "pm.test('Job is marked profile-reviewed',()=>pm.expect(json.profileReviewed).to.eql(true));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/{{jobId}}/assign/{{workerId}}/reviewed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jobs",
+                "{{jobId}}",
+                "assign",
+                "{{workerId}}",
+                "reviewed"
+              ]
+            }
+          }
+        },
+        {
+          "name": "NEGATIVE: employer cannot assign without reviewing the profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Plain employer assignment is rejected (403)',()=>pm.expect(pm.response.code).to.eql(403));"
                 ]
               }
             }

@@ -8,13 +8,13 @@ import Navbar from './Navbar';
  * layout. The `accent` prop is forwarded to the Navbar for the role badge
  * colour and defaults per role there, so passing it is optional.
  */
-export default function DashboardLayout({ title, accent, children }) {
+export default function DashboardLayout({ title, accent, showTitle = true, children }) {
   return (
     <div className="min-vh-100 d-flex flex-column bg-light">
       <Navbar accent={accent} />
 
       <main className="container-fluid flex-grow-1 py-4">
-        <h2 className="h4 mb-4">{title}</h2>
+        {showTitle && <h2 className="h4 mb-4">{title}</h2>}
         {children}
         {/* Nested routes (e.g. /worker/jobs) render here inside the shell. */}
         <Outlet />

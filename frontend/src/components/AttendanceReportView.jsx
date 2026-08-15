@@ -88,7 +88,7 @@ export default function AttendanceReportView({ report, emptyMessage }) {
                   <td>{formatDate(record.date)}</td>
                   <td>
                     <span
-                      className={`badge bg-${
+                      className={`badge badge-soft-${
                         STATUS_BADGE[record.status] || 'secondary'
                       } text-uppercase`}
                     >

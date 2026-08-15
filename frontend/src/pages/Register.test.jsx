@@ -29,7 +29,7 @@ const fillForm = async (user, overrides = {}) => {
     screen.getByLabelText('Email address'),
     overrides.email ?? 'jane@example.com'
   );
-  await user.type(screen.getByLabelText('Password'), overrides.password ?? 'secret123');
+  await user.type(screen.getByLabelText('Password'), overrides.password ?? 'Secret12!');
 };
 
 describe('Register', () => {
@@ -85,15 +85,44 @@ describe('Register', () => {
       expect(useAuth().register).not.toHaveBeenCalled();
     });
 
-    it('rejects a password shorter than 6 characters', async () => {
+    it('rejects a password shorter than 8 characters', async () => {
       const user = userEvent.setup();
       renderRegister();
 
-      await fillForm(user, { password: '12345' });
+      await fillForm(user, { password: 'Sec12!a' });
       await user.click(screen.getByRole('button', { name: /create account/i }));
 
       expect(
-        await screen.findByText('Password must be at least 6 characters.')
+        await screen.findByText('Password must be 8–10 characters long.')
+      ).toBeInTheDocument();
+      expect(useAuth().register).not.toHaveBeenCalled();
+    });
+
+    it('rejects a password longer than 10 characters', async () => {
+      const user = userEvent.setup();
+      renderRegister();
+
+      await fillForm(user, { password: 'Secret12345!' });
+      await user.click(screen.getByRole('button', { name: /create account/i }));
+
+      expect(
+        await screen.findByText('Password must be 8–10 characters long.')
+      ).toBeInTheDocument();
+      expect(useAuth().register).not.toHaveBeenCalled();
+    });
+
+    it('rejects a password missing uppercase, number, or special characters', async () => {
+      const user = userEvent.setup();
+      renderRegister();
+
+      // Lowercase + digits only (no uppercase, no special character).
+      await fillForm(user, { password: 'secret123' });
+      await user.click(screen.getByRole('button', { name: /create account/i }));
+
+      expect(
+        await screen.findByText(
+          'Password must include uppercase, lowercase, a number, and a special character.'
+        )
       ).toBeInTheDocument();
       expect(useAuth().register).not.toHaveBeenCalled();
     });
@@ -131,7 +160,7 @@ describe('Register', () => {
       expect(register).toHaveBeenCalledWith({
         name: 'Jane Doe',
         email: 'jane@example.com',
-        password: 'secret123',
+        password: 'Secret12!',
         role: 'WORKER',
       });
 
@@ -175,7 +204,7 @@ describe('Register', () => {
       expect(register).toHaveBeenCalledWith({
         name: 'Jane Doe',
         email: 'jane@example.com',
-        password: 'secret123',
+        password: 'Secret12!',
         role: 'WORKER',
       });
     });

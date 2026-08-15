@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Star, MessageSquareText } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 import { useAuth } from '../../context/AuthContext';
 import { formatDate } from '../../utils/jobFormat';
@@ -129,7 +130,7 @@ export default function MyPerformance() {
           {/* Headline stats */}
           <div className="row g-3 mb-4">
             <StatCard
-              emoji="⭐"
+              icon={Star}
               label="Average rating"
               value={
                 report.averageRating == null ? (
@@ -149,7 +150,7 @@ export default function MyPerformance() {
               accent="warning"
             />
             <StatCard
-              emoji="📝"
+              icon={MessageSquareText}
               label="Total reviews"
               value={report.reviewCount}
               note="Submitted by your employers"

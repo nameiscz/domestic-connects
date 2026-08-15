@@ -197,16 +197,16 @@ export default function UserManagement() {
                       <td className="text-muted">{user.email}</td>
                       <td>
                         <span
-                          className={`badge bg-${ROLE_BADGE[user.role] || 'secondary'} text-uppercase`}
+                          className={`badge badge-soft-${ROLE_BADGE[user.role] || 'secondary'} text-uppercase`}
                         >
                           {user.role}
                         </span>
                       </td>
                       <td>
                         {user.active ? (
-                          <span className="badge bg-success">Active</span>
+                          <span className="badge badge-soft-success">Active</span>
                         ) : (
-                          <span className="badge bg-danger">Inactive</span>
+                          <span className="badge badge-soft-danger">Inactive</span>
                         )}
                       </td>
                       <td className="text-end">

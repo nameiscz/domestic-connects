@@ -1,8 +1,9 @@
 import { STATUS_BADGE, STATUS_LABEL } from '../utils/jobFormat';
 
 /**
- * Colored Bootstrap badge for a JobStatus value (OPEN / ASSIGNED / CLOSED).
- * Unknown statuses fall back to a neutral badge showing the raw value.
+ * Soft-tinted status pill for a JobStatus value (OPEN / ASSIGNED / CLOSED),
+ * matching the design system's tag treatment. Unknown statuses fall back to a
+ * neutral pill showing the raw value.
  *
  * Usage: <JobStatusBadge status={job.status} className="flex-shrink-0" />
  */
@@ -12,7 +13,7 @@ export default function JobStatusBadge({ status, className = '' }) {
 
   return (
     <span
-      className={`badge bg-${variant} text-uppercase${className ? ` ${className}` : ''}`}
+      className={`badge badge-soft-${variant} text-uppercase${className ? ` ${className}` : ''}`}
     >
       {label}
     </span>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
@@ -108,6 +108,24 @@ export default function SubmitReview() {
       String(job.workerId ?? '') === String(workerId) &&
       (!isEmployer || String(job.employerId) === String(currentUser?.id))
   );
+
+  // Employers may only review workers they have actually hired — the picker
+  // is narrowed to the assignees of the employer's ASSIGNED job posts.
+  // Admins see the full worker directory.
+  const visibleWorkers = useMemo(() => {
+    if (!isEmployer) return workers;
+    const assigned = new Set();
+    jobs.forEach((job) => {
+      if (
+        job.status === 'ASSIGNED' &&
+        String(job.employerId) === String(currentUser?.id) &&
+        job.workerId != null
+      ) {
+        assigned.add(String(job.workerId));
+      }
+    });
+    return workers.filter((w) => assigned.has(String(w.id)));
+  }, [isEmployer, currentUser?.id, jobs, workers]);
 
   useEffect(() => {
     if (!currentUser?.id) {
@@ -222,19 +240,31 @@ export default function SubmitReview() {
                   <label htmlFor="review-worker" className="form-label">
                     Worker
                   </label>
-                  {workersLoading ? (
+                  {workersLoading || (isEmployer && jobsLoading) ? (
                     <div className="text-muted small py-2">Loading workers…</div>
-                  ) : workersError ? (
+                  ) : workersError || (isEmployer && jobsError) ? (
                     <div className="alert alert-danger py-2 mb-0" role="alert">
-                      <p className="mb-2">{workersError}</p>
+                      <p className="mb-2">{workersError || jobsError}</p>
                       <button
                         type="button"
                         className="btn btn-outline-danger btn-sm"
-                        onClick={() => loadWorkers()}
+                        onClick={() => {
+                          loadWorkers();
+                          loadJobs();
+                        }}
                       >
                         Try again
                       </button>
                     </div>
+                  ) : visibleWorkers.length === 0 ? (
+                    isEmployer ? (
+                      <div className="text-muted small py-2">
+                        No assigned workers yet — assign a worker to one of
+                        your job posts to start reviewing them.
+                      </div>
+                    ) : (
+                      <p className="text-muted small mb-0">No workers found.</p>
+                    )
                   ) : (
                     <select
                       id="review-worker"
@@ -251,7 +281,7 @@ export default function SubmitReview() {
                       aria-invalid={Boolean(errors.workerId)}
                     >
                       <option value="">Select a worker…</option>
-                      {workers.map((worker) => (
+                      {visibleWorkers.map((worker) => (
                         <option key={worker.id} value={worker.id}>
                           {worker.name} ({worker.email})
                         </option>

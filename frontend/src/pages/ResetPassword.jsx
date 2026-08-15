@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { errorMessage } from '../utils/errors';
+import { passwordError } from '../utils/validation';
 
 /**
  * ResetPassword — sets a new password using the one-time token from the
@@ -27,11 +28,8 @@ export default function ResetPassword() {
 
   const validate = () => {
     const next = {};
-    if (!password) {
-      next.password = 'Password is required.';
-    } else if (password.length < 6) {
-      next.password = 'Password must be at least 6 characters.';
-    }
+    const passwordErr = passwordError(password);
+    if (passwordErr) next.password = passwordErr;
     if (!confirm) {
       next.confirm = 'Please confirm your password.';
     } else if (confirm !== password) {
@@ -126,7 +124,7 @@ export default function ResetPassword() {
                         id="new-password"
                         type={showPassword ? 'text' : 'password'}
                         className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                        placeholder="At least 6 characters"
+                        placeholder="8–10 characters with A–Z, a–z, 0–9, special"
                         value={password}
                         onChange={handleChange('password')}
                         aria-invalid={Boolean(errors.password)}

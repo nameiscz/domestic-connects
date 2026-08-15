@@ -1,13 +1,34 @@
 package com.domesticconnects.auth.service;
 
 import com.domesticconnects.auth.dto.*;
+import com.domesticconnects.auth.entity.PasswordResetToken;
 import com.domesticconnects.auth.entity.Role;
 import com.domesticconnects.auth.entity.User;
 import com.domesticconnects.auth.exception.ResourceNotFoundException;
 import com.domesticconnects.auth.exception.TokenRefreshException;
 import com.domesticconnects.auth.exception.UserAlreadyExistsException;
+import com.domesticconnects.auth.repository.PasswordResetTokenRepository;
 import com.domesticconnects.auth.repository.UserRepository;
 import com.domesticconnects.auth.security.JwtUtils;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,13 +48,25 @@ public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final UserRepository userRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
 
     @Value("${jwt.access-token-expiration}")
     private long accessTokenExpiration;
+
+    @Value("${auth.reset-token-expiration-minutes:30}")
+    private long resetTokenExpirationMinutes;
+
+    /**
+     * Frontend origin used to build the reset link (e.g. the Vite dev server).
+     */
+    @Value("${auth.frontend-base-url:http://localhost:5173}")
+    private String frontendBaseUrl;
 
     /**
      * Registers a new user account.
@@ -201,6 +234,97 @@ public class AuthService {
         log.info("User account deactivated: {}", user.getEmail());
 
         return ApiResponse.success("Account deactivated successfully", null);
+    }
+
+    /**
+     * Starts the password-reset flow: issues a one-time token for the user and
+     * returns it (with a ready-to-open reset link) in the response body — the
+     * project has no email/SMTP provider yet. Unknown emails still get a
+     * generic success response without a token, so the endpoint cannot be used
+     * to probe which addresses have accounts.
+     */
+    @Transactional
+    public ApiResponse<PasswordResetResponse> forgotPassword(String email) {
+        Optional<User> maybeUser = userRepository.findByEmail(email.trim());
+        if (maybeUser.isEmpty()) {
+            return ApiResponse.success(
+                    "If an account exists for this email, a password reset link has been sent",
+                    null);
+        }
+
+        User user = maybeUser.get();
+        String rawToken = generateToken();
+
+        // Only the most recent link stays valid; wipe any earlier tokens first.
+        passwordResetTokenRepository.deleteByUserId(user.getId());
+        passwordResetTokenRepository.save(PasswordResetToken.builder()
+                .userId(user.getId())
+                .tokenHash(hashToken(rawToken))
+                .expiresAt(LocalDateTime.now().plusMinutes(resetTokenExpirationMinutes))
+                .build());
+
+        log.info("Password reset token issued for user {} (expires in {} minutes)",
+                user.getEmail(), resetTokenExpirationMinutes);
+
+        PasswordResetResponse data = PasswordResetResponse.builder()
+                .token(rawToken)
+                .resetLink(frontendBaseUrl + "/reset-password?token=" + rawToken)
+                .expiresInMinutes(resetTokenExpirationMinutes)
+                .build();
+        return ApiResponse.success("Password reset link generated", data);
+    }
+
+    /**
+     * Applies a new password using a one-time reset token. The token is hashed
+     * before lookup, must not be expired, and is deleted on success so it can
+     * only ever be used once. Invalid or expired tokens surface the same
+     * generic error to avoid leaking whether a token was ever issued.
+     */
+    @Transactional
+    public ApiResponse<Void> resetPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = passwordResetTokenRepository
+                .findByTokenHash(hashToken(token))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Invalid or expired reset token"));
+
+        if (resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Invalid or expired reset token");
+        }
+
+        User user = userRepository.findById(resetToken.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User", "id", resetToken.getUserId()));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        passwordResetTokenRepository.delete(resetToken);
+
+        log.info("Password reset completed for user {}", user.getEmail());
+
+        return ApiResponse.success("Password has been reset successfully", null);
+    }
+
+    /**
+     * Generates a 64-character hex token from 32 cryptographically random bytes.
+     */
+    private String generateToken() {
+        byte[] bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return HexFormat.of().formatHex(bytes);
+    }
+
+    /**
+     * SHA-256 hex digest of the raw token — only the digest is ever persisted
+     * or queried, never the token itself.
+     */
+    private String hashToken(String rawToken) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(
+                    digest.digest(rawToken.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
     }
 
     /**

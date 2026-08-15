@@ -21,7 +21,7 @@ integration-tests/
 |---|---------------------------------------------|-----------------------------------------------------|
 | 1 | Register worker + employer (+admin), login, activate | `0. Register Accounts`, `1. Login & Activate` |
 | 2 | Employer posts a job                        | `2. Job Posting & Assignment`                       |
-| 3 | Worker assigned to the job                  | `2. Job Posting & Assignment`                       |
+| 3 | Employer reviews worker profile, assigns    | `2. Job Posting & Assignment` (reviewed endpoint)   |
 | 4 | Attendance marked for several days          | `3. Attendance` (3 PRESENT + 1 HALF_DAY + 1 ABSENT, duplicate → 409) |
 | 5 | Salary slip generated & downloaded          | `4. Salary Slip & Payroll` (PDF + history + CSV + batch ZIP) |
 | 6 | Performance review submitted                | `5. Performance Review` (submit, read, own-read, update, 403s) |

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Users, FolderOpen, CalendarCheck, Star } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 import DashboardLayout from '../../components/DashboardLayout';
 import StatCard from '../../components/StatCard';
@@ -74,21 +75,21 @@ export default function AdminDashboard() {
         <>
           <div className="row g-3">
             <StatCard
-              emoji="👥"
+              icon={Users}
               label="Total users"
               value={summary?.totalUsers ?? '—'}
               note={`${summary?.activeUsers ?? '—'} active`}
               accent="danger"
             />
             <StatCard
-              emoji="🗂️"
+              icon={FolderOpen}
               label="Total jobs"
               value={summary?.totalJobs ?? '—'}
               note={`${summary?.activeJobs ?? '—'} active`}
               accent="primary"
             />
             <StatCard
-              emoji="📅"
+              icon={CalendarCheck}
               label="Attendance rate"
               value={
                 summary?.monthlyAttendanceRate == null
@@ -99,7 +100,7 @@ export default function AdminDashboard() {
               accent="success"
             />
             <StatCard
-              emoji="⭐"
+              icon={Star}
               label="Avg. rating"
               value={
                 summary?.averagePerformanceRating == null

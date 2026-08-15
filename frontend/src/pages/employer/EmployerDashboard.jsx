@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
+import { Rocket, ClipboardList, Handshake, Star, Banknote } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { formatWage } from '../../utils/jobFormat';
 import DashboardLayout from '../../components/DashboardLayout';
@@ -185,28 +186,28 @@ export default function EmployerDashboard() {
             <>
               <div className="row g-3">
                 <StatCard
-                  emoji="🚀"
+                  icon={Rocket}
                   label="Active job posts"
                   value={stats?.open ?? 0}
                   note="Currently open for applications"
                   accent="success"
                 />
                 <StatCard
-                  emoji="📋"
+                  icon={ClipboardList}
                   label="Total job posts"
                   value={stats?.total ?? 0}
                   note="Posted so far, across all statuses"
                   accent="primary"
                 />
                 <StatCard
-                  emoji="🤝"
+                  icon={Handshake}
                   label="Workers hired"
                   value={stats?.hired ?? 0}
                   note="Assigned to your job postings"
                   accent="warning"
                 />
                 <StatCard
-                  emoji="⭐"
+                  icon={Star}
                   label="Avg. worker rating"
                   value={stats?.perfAvg == null ? '—' : `${Number(stats.perfAvg).toFixed(2)} / 5`}
                   note={
@@ -217,7 +218,7 @@ export default function EmployerDashboard() {
                   accent="warning"
                 />
                 <StatCard
-                  emoji="💵"
+                  icon={Banknote}
                   label="Avg. wage / day"
                   value={stats?.avgWage == null ? '—' : formatWage(stats.avgWage)}
                   note={stats?.avgWage == null ? 'No open postings yet' : 'Across open jobs'}
@@ -272,8 +273,6 @@ export default function EmployerDashboard() {
         </>
       )}
 
-      {/* Nested routes (e.g. /employer/jobs) render here inside the shell. */}
-      <Outlet />
     </DashboardLayout>
   );
 }

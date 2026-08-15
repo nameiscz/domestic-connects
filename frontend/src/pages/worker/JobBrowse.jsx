@@ -14,6 +14,7 @@ export default function JobBrowse() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [applyingId, setApplyingId] = useState(null);
+  const [appliedJobIds, setAppliedJobIds] = useState([]);
   const { toasts, pushToast, dismissToast } = useToasts();
 
   const fetchJobs = useCallback(async (signal) => {
@@ -46,16 +47,15 @@ export default function JobBrowse() {
 
     setApplyingId(job.id);
     try {
-      const { data } = await axiosInstance.post(
-        `/api/jobs/${job.id}/assign/${workerId}`
+      // Applying records a PENDING application — it does not assign. The
+      // employer reviews the worker's profile and accepts or declines.
+      await axiosInstance.post(`/api/jobs/${job.id}/apply`);
+      setAppliedJobIds((prev) =>
+        prev.includes(job.id) ? prev : [...prev, job.id]
       );
-      // Reflect the new status in the grid immediately, no refetch needed.
-      setJobs((prev) =>
-        prev.map((j) =>
-          j.id === job.id ? { ...j, status: data?.status || 'ASSIGNED' } : j
-        )
+      pushToast(
+        `Application sent for "${job.title}" — the employer will review it.`
       );
-      pushToast(`Application sent — you're in line for "${job.title}".`);
     } catch (err) {
       const message =
         err.response?.data?.message || 'Unable to apply. Please try again.';
@@ -159,10 +159,14 @@ export default function JobBrowse() {
                   <div className="card-body d-flex flex-column">
                     <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
                       <h5 className="card-title mb-0">{job.title}</h5>
-                      <JobStatusBadge
-                        status={job.status}
-                        className="flex-shrink-0"
-                      />
+                      <div className="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                        <JobStatusBadge status={job.status} />
+                        {appliedJobIds.includes(job.id) && job.status === 'OPEN' && (
+                          <span className="badge badge-soft-primary">
+                            Application sent
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <p className="card-text text-muted job-description">
@@ -170,10 +174,10 @@ export default function JobBrowse() {
                     </p>
 
                     <div className="mt-auto">
-                      <div className="d-flex justify-content-between align-items-baseline border-top pt-3 mb-3">
-                        <span className="fw-semibold text-primary fs-5">
+                      <div className="d-flex justify-content-between align-items-center border-top pt-3 mb-3">
+                        <span className="chip-wage">
                           {formatWage(job.wagePerDay)}
-                          <span className="text-muted fw-normal small">/day</span>
+                          <span className="chip-wage-day">/day</span>
                         </span>
                         <span className="text-muted small text-end">
                           {job.location}
@@ -181,24 +185,34 @@ export default function JobBrowse() {
                       </div>
 
                       {isOpen ? (
-                        <button
-                          type="button"
-                          className="btn btn-primary w-100"
-                          onClick={() => handleApply(job)}
-                          disabled={Boolean(applyingId) || !workerId}
-                        >
-                          {isApplying ? (
-                            <>
-                              <span
-                                className="spinner-border spinner-border-sm me-2"
-                                aria-hidden="true"
-                              />
-                              Applying…
-                            </>
-                          ) : (
-                            'Apply'
-                          )}
-                        </button>
+                        appliedJobIds.includes(job.id) ? (
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary w-100"
+                            disabled
+                          >
+                            Applied — awaiting review
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-primary w-100"
+                            onClick={() => handleApply(job)}
+                            disabled={Boolean(applyingId) || !workerId}
+                          >
+                            {isApplying ? (
+                              <>
+                                <span
+                                  className="spinner-border spinner-border-sm me-2"
+                                  aria-hidden="true"
+                                />
+                                Applying…
+                              </>
+                            ) : (
+                              'Apply'
+                            )}
+                          </button>
+                        )
                       ) : (
                         <button
                           type="button"

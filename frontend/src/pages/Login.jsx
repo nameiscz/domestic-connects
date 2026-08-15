@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_HOME } from '../constants/roles';
+import Logo from '../components/Logo';
 import { EMAIL_RE } from '../utils/validation';
 import { errorMessage } from '../utils/errors';
 
@@ -96,7 +97,10 @@ export default function Login() {
     <div className="min-vh-100 d-flex align-items-center bg-light py-5">
       <div className="container" style={{ maxWidth: 440 }}>
         <div className="text-center mb-4">
-          <h1 className="h3 fw-bold text-primary mb-1">Domestic Connects</h1>
+          <h1 className="auth-brand mb-1">
+            <Logo size={30} />
+            Domestic Connects
+          </h1>
           <p className="text-muted mb-0">Sign in to your account</p>
         </div>
 

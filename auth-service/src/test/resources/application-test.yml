@@ -39,6 +39,10 @@ jwt:
   access-token-expiration: 900000
   refresh-token-expiration: 604800000
 
+auth:
+  reset-token-expiration-minutes: 30
+  frontend-base-url: http://localhost:5173
+
 logging:
   level:
     com.domesticconnects.auth: DEBUG

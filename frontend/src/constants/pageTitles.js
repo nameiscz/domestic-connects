@@ -3,6 +3,7 @@
 // to resolvePageTitle's prefix checks.
 export const PAGE_TITLES = {
   // Public
+  '/': 'Welcome',
   '/login': 'Sign in',
   '/register': 'Create account',
   '/reset-password': 'Reset password',
