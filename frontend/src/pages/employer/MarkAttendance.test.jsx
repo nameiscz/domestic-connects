@@ -67,6 +67,7 @@ const JOBS = [
     wagePerDay: 600,
     location: 'Pune, Maharashtra',
     status: 'ASSIGNED',
+    workerId: 11,
   },
   {
     id: 2,
@@ -200,9 +201,23 @@ describe('MarkAttendance', () => {
     expect(within(modal).queryByRole('option', { name: /old job/i })).not.toBeInTheDocument();
   });
 
-  it('explains that no assigned jobs are available when the picker is empty', async () => {
-    const user = userEvent.setup();
-    // All of the employer's jobs are still OPEN — nothing assignable yet.
+  it('lists only workers assigned to the employer’s job posts', async () => {
+    renderMarkAttendance();
+
+    // Ana (11) is the assignee of the employer's ASSIGNED Cook job; Ben (12)
+    // has no assignment and must not appear in the picker.
+    const workerSelect = await screen.findByLabelText('Worker');
+    const labels = within(workerSelect)
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(labels.join(' | ')).toContain('Select a worker…');
+    expect(labels.join(' | ')).toContain('Ana (ana@example.com)');
+    expect(labels.join(' | ')).not.toContain('Ben');
+  });
+
+  it('shows a hint when the employer has no assigned workers yet', async () => {
+    // The employer's only posting is still OPEN — nobody to mark attendance
+    // for yet.
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/auth/workers') {
         return Promise.resolve({ data: { data: WORKERS } });
@@ -214,13 +229,9 @@ describe('MarkAttendance', () => {
     });
     renderMarkAttendance();
 
-    await selectWorker(user, 11);
-    await user.click(screen.getByRole('button', { name: /mark attendance/i }));
-
-    const modal = await screen.findByRole('dialog');
-    expect(
-      await within(modal).findByText(/no assigned jobs to mark attendance against/i)
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/no assigned workers yet/i)).toBeInTheDocument();
+    // Without an assigned worker there is nothing to mark.
+    expect(screen.getByRole('button', { name: /mark attendance/i })).toBeDisabled();
   });
 
   it('requires a job before marking (client-side validation)', async () => {

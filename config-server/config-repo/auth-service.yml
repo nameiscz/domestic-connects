@@ -30,6 +30,10 @@ jwt:
   access-token-expiration: 900000       # 15 minutes in milliseconds
   refresh-token-expiration: 604800000   # 7 days in milliseconds
 
+auth:
+  reset-token-expiration-minutes: 30
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+
 eureka:
   instance:
     prefer-ip-address: true

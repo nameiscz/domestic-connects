@@ -34,6 +34,17 @@ public class JobPost {
     @Column(name = "worker_id")
     private Long workerId;
 
+    /**
+     * Whether the employer reviewed the assigned worker's profile before
+     * assigning. Employers/admins must assign via the reviewed endpoint
+     * ({@code POST /jobs/{id}/assign/{workerId}/reviewed}), which sets this
+     * flag; plain assignments are reserved for workers applying to their own
+     * job. Mirrors the same flag on {@link JobPostResponse}.
+     */
+    @Column(name = "profile_reviewed", nullable = false)
+    @Builder.Default
+    private boolean profileReviewed = false;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal wagePerDay;
 

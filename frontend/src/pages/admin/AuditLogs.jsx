@@ -377,7 +377,7 @@ export default function AuditLogs() {
                       </td>
                       <td className="fw-semibold">{log.actor ?? '—'}</td>
                       <td>
-                        <span className="badge bg-secondary text-uppercase">
+                        <span className="badge badge-soft-secondary text-uppercase">
                           {log.action ?? '—'}
                         </span>
                       </td>

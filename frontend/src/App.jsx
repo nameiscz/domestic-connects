@@ -5,6 +5,7 @@ import { ROLE_HOME } from './constants/roles';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ResetPassword from './pages/ResetPassword';
+import Landing from './pages/Landing';
 import NotFound from './pages/NotFound';
 import WorkerDashboard from './pages/worker/WorkerDashboard';
 import JobBrowse from './pages/worker/JobBrowse';
@@ -14,6 +15,7 @@ import MyPerformance from './pages/worker/MyPerformance';
 import Notifications from './pages/worker/Notifications';
 import EmployerDashboard from './pages/employer/EmployerDashboard';
 import MyJobPosts from './pages/employer/MyJobPosts';
+import WorkerProfile from './pages/employer/WorkerProfile';
 import PostJob from './pages/employer/PostJob';
 import MarkAttendance from './pages/employer/MarkAttendance';
 import SubmitReview from './pages/SubmitReview';
@@ -26,11 +28,16 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AuditLogs from './pages/admin/AuditLogs';
 import PageTitle from './components/PageTitle';
 
-/** Redirects "/" to the signed-in user's dashboard (or /login). */
-function HomeRedirect() {
+/**
+ * Home route: signed-in users go straight to their dashboard; everyone else
+ * sees the public marketing landing page.
+ */
+function Home() {
   const { currentUser } = useAuth();
-  const home = currentUser ? ROLE_HOME[currentUser.role] || '/login' : '/login';
-  return <Navigate to={home} replace />;
+  if (currentUser) {
+    return <Navigate to={ROLE_HOME[currentUser.role] || '/login'} replace />;
+  }
+  return <Landing />;
 }
 
 export default function App() {
@@ -41,7 +48,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           {/* Public */}
-          <Route path="/" element={<HomeRedirect />} />
+          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -70,6 +77,7 @@ export default function App() {
             }
           >
             <Route path="jobs" element={<MyJobPosts />} />
+            <Route path="workers/:id" element={<WorkerProfile />} />
             <Route path="jobs/new" element={<PostJob />} />
             <Route path="jobs/edit/:id" element={<PostJob />} />
             <Route path="attendance" element={<MarkAttendance />} />

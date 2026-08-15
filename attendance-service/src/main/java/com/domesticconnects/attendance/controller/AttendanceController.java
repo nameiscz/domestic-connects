@@ -5,6 +5,7 @@ import com.domesticconnects.attendance.dto.AttendanceResponse;
 import com.domesticconnects.attendance.dto.WorkerAttendanceReport;
 import com.domesticconnects.attendance.exception.AccessDeniedException;
 import com.domesticconnects.attendance.service.AttendanceService;
+import com.domesticconnects.attendance.service.JobAssignmentVerifier;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Attendance endpoints. Authentication is performed by the API gateway, which
@@ -31,12 +33,18 @@ public class AttendanceController {
     private static final String ROLE_WORKER = "WORKER";
 
     private final AttendanceService attendanceService;
+    private final JobAssignmentVerifier jobAssignmentVerifier;
 
     @PostMapping("/mark")
     public ResponseEntity<AttendanceResponse> markAttendance(
             @Valid @RequestBody AttendanceRequest request,
             HttpServletRequest httpRequest) {
         requireRole(httpRequest, ROLE_ADMIN, ROLE_EMPLOYER);
+        // Employers may only mark attendance against their own jobs, and only
+        // for the worker assigned to that job.
+        if (extractUserRole(httpRequest).equalsIgnoreCase(ROLE_EMPLOYER)) {
+            jobAssignmentVerifier.verifyEmployerCanMark(requireEmployerId(httpRequest), request);
+        }
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(attendanceService.markAttendance(request));
     }
@@ -53,6 +61,11 @@ public class AttendanceController {
             requireSelfAccess(httpRequest, workerId);
         } else {
             requireRole(httpRequest, ROLE_ADMIN, ROLE_EMPLOYER);
+            // Employers may only view attendance of workers they have hired.
+            if (ROLE_EMPLOYER.equalsIgnoreCase(role)) {
+                jobAssignmentVerifier.verifyEmployerCanView(
+                        requireEmployerId(httpRequest), workerId);
+            }
         }
         return ResponseEntity.ok(
                 attendanceService.getWorkerAttendance(workerId, month, year));
@@ -64,8 +77,14 @@ public class AttendanceController {
             @RequestParam(required = false) Integer year,
             HttpServletRequest httpRequest) {
         requireRole(httpRequest, ROLE_ADMIN, ROLE_EMPLOYER);
-        return ResponseEntity.ok(
-                attendanceService.getWorkerIdsWithAttendance(month, year));
+        List<Long> workerIds = attendanceService.getWorkerIdsWithAttendance(month, year);
+        // Employers see only the ids of workers they have actually hired.
+        if (extractUserRole(httpRequest).equalsIgnoreCase(ROLE_EMPLOYER)) {
+            Set<Long> assigned = jobAssignmentVerifier.assignedWorkerIds(
+                    requireEmployerId(httpRequest));
+            workerIds = workerIds.stream().filter(assigned::contains).toList();
+        }
+        return ResponseEntity.ok(workerIds);
     }
 
     /**
@@ -107,6 +126,27 @@ public class AttendanceController {
     private String extractUserId(HttpServletRequest request) {
         String userId = request.getHeader("X-User-Id");
         return userId == null ? "" : userId.trim();
+    }
+
+    /**
+     * Parses the caller's id (the employer's user id) from the
+     * gateway-forwarded {@code X-User-Id} header. Fails closed with
+     * {@link AccessDeniedException} when the header is missing or non-numeric
+     * so an employer-facing check can never accidentally pass for an
+     * unidentified caller.
+     */
+    private Long requireEmployerId(HttpServletRequest request) {
+        String userId = extractUserId(request);
+        if (userId.isBlank()) {
+            throw new AccessDeniedException(
+                    "Access denied: unable to verify employer identity");
+        }
+        try {
+            return Long.parseLong(userId.trim());
+        } catch (NumberFormatException e) {
+            throw new AccessDeniedException(
+                    "Access denied: unable to verify employer identity");
+        }
     }
 
     /**

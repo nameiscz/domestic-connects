@@ -1,9 +1,11 @@
 package com.domesticconnects.auth.controller;
 
 import com.domesticconnects.auth.dto.AuthResponse;
+import com.domesticconnects.auth.dto.ForgotPasswordRequest;
 import com.domesticconnects.auth.dto.LoginRequest;
 import com.domesticconnects.auth.dto.RefreshTokenRequest;
 import com.domesticconnects.auth.dto.RegisterRequest;
+import com.domesticconnects.auth.dto.ResetPasswordRequest;
 import com.domesticconnects.auth.entity.Role;
 import com.domesticconnects.auth.entity.User;
 import com.domesticconnects.auth.repository.UserRepository;
@@ -69,7 +71,7 @@ class AuthControllerIntegrationTest {
             RegisterRequest request = new RegisterRequest();
             request.setName("Alice");
             request.setEmail("alice@example.com");
-            request.setPassword("password123");
+            request.setPassword("Passw0rd!");
             request.setRole(Role.WORKER);
 
             mockMvc.perform(post("/auth/register")
@@ -95,7 +97,7 @@ class AuthControllerIntegrationTest {
             RegisterRequest request = new RegisterRequest();
             request.setName("Bob");
             request.setEmail("duplicate@example.com");
-            request.setPassword("password123");
+            request.setPassword("Passw0rd!");
             request.setRole(Role.WORKER);
 
             mockMvc.perform(post("/auth/register")
@@ -119,6 +121,188 @@ class AuthControllerIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("should return 400 for a password missing required character types")
+        void shouldReturn400ForWeakPassword() throws Exception {
+            RegisterRequest request = new RegisterRequest();
+            request.setName("Carol");
+            request.setEmail("carol@example.com");
+            request.setPassword("newsecret1");  // Right length, no uppercase/special
+            request.setRole(Role.WORKER);
+
+            mockMvc.perform(post("/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(
+                            org.hamcrest.Matchers.containsString("uppercase")));
+        }
+
+        @Test
+        @DisplayName("should return 400 for a password longer than 10 characters")
+        void shouldReturn400ForLongPassword() throws Exception {
+            RegisterRequest request = new RegisterRequest();
+            request.setName("Dan");
+            request.setEmail("dan@example.com");
+            request.setPassword("Passw0rd!123");  // 11 characters
+            request.setRole(Role.WORKER);
+
+            mockMvc.perform(post("/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(
+                            org.hamcrest.Matchers.containsString("between 8 and 10")));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /auth/forgot-password")
+    class ForgotPassword {
+
+        @Test
+        @DisplayName("should issue a reset token and link for an existing user")
+        void shouldIssueResetToken() throws Exception {
+            createAndSaveUser("reset@example.com", Role.WORKER, true);
+
+            ForgotPasswordRequest request = new ForgotPasswordRequest();
+            request.setEmail("reset@example.com");
+
+            mockMvc.perform(post("/auth/forgot-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data.token").isNotEmpty())
+                    .andExpect(jsonPath("$.data.resetLink").value(
+                            org.hamcrest.Matchers.containsString("reset-password?token=")))
+                    .andExpect(jsonPath("$.data.expiresInMinutes").value(30));
+        }
+
+        @Test
+        @DisplayName("should return a generic success for an unknown email")
+        void shouldNotRevealUnknownEmail() throws Exception {
+            ForgotPasswordRequest request = new ForgotPasswordRequest();
+            request.setEmail("ghost@example.com");
+
+            mockMvc.perform(post("/auth/forgot-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true))
+                    .andExpect(jsonPath("$.data").value(org.hamcrest.Matchers.nullValue()));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /auth/reset-password")
+    class ResetPassword {
+
+        private String requestResetToken(String email) throws Exception {
+            ForgotPasswordRequest forgot = new ForgotPasswordRequest();
+            forgot.setEmail(email);
+            MvcResult result = mockMvc.perform(post("/auth/forgot-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(forgot)))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            return objectMapper.readTree(result.getResponse().getContentAsString())
+                    .at("/data/token").asText();
+        }
+
+        @Test
+        @DisplayName("should reset the password and allow signing in with the new one")
+        void shouldResetPasswordAndLogin() throws Exception {
+            createAndSaveUser("resetme@example.com", Role.WORKER, true);
+            String token = requestResetToken("resetme@example.com");
+
+            ResetPasswordRequest reset = new ResetPasswordRequest();
+            reset.setToken(token);
+            reset.setNewPassword("Newpass1!");
+
+            mockMvc.perform(post("/auth/reset-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(reset)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+
+            // The old password no longer works…
+            LoginRequest oldLogin = new LoginRequest();
+            oldLogin.setEmail("resetme@example.com");
+            oldLogin.setPassword("password123");
+            mockMvc.perform(post("/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(oldLogin)))
+                    .andExpect(status().isUnauthorized());
+
+            // …and the new one does.
+            LoginRequest newLogin = new LoginRequest();
+            newLogin.setEmail("resetme@example.com");
+            newLogin.setPassword("Newpass1!");
+            mockMvc.perform(post("/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(newLogin)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.user.email").value("resetme@example.com"));
+        }
+
+        @Test
+        @DisplayName("should reject a token that was already used")
+        void shouldRejectReusedToken() throws Exception {
+            createAndSaveUser("onetime@example.com", Role.WORKER, true);
+            String token = requestResetToken("onetime@example.com");
+
+            ResetPasswordRequest reset = new ResetPasswordRequest();
+            reset.setToken(token);
+            reset.setNewPassword("Newpass1!");
+
+            mockMvc.perform(post("/auth/reset-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(reset)))
+                    .andExpect(status().isOk());
+
+            // Same token again → single-use enforced.
+            mockMvc.perform(post("/auth/reset-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(reset)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(
+                            org.hamcrest.Matchers.containsString("Invalid or expired")));
+        }
+
+        @Test
+        @DisplayName("should return 400 for an invalid token")
+        void shouldRejectInvalidToken() throws Exception {
+            ResetPasswordRequest reset = new ResetPasswordRequest();
+            reset.setToken("bogus-token");
+            reset.setNewPassword("Newpass1!");
+
+            mockMvc.perform(post("/auth/reset-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(reset)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(
+                            org.hamcrest.Matchers.containsString("Invalid or expired")));
+        }
+
+        @Test
+        @DisplayName("should return 400 for a weak new password")
+        void shouldRejectWeakPassword() throws Exception {
+            createAndSaveUser("weak@example.com", Role.WORKER, true);
+            String token = requestResetToken("weak@example.com");
+
+            ResetPasswordRequest reset = new ResetPasswordRequest();
+            reset.setToken(token);
+            reset.setNewPassword("newsecret1");  // Right length, no uppercase/special
+
+            mockMvc.perform(post("/auth/reset-password")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(reset)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value(
+                            org.hamcrest.Matchers.containsString("uppercase")));
         }
     }
 

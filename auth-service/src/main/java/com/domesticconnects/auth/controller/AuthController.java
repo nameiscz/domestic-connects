@@ -41,6 +41,29 @@ public class AuthController {
     }
 
     /**
+     * Starts the password-reset flow. Public — the caller only provides an
+     * email. The one-time token and reset link are returned in the response
+     * body (the project has no email provider yet).
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<PasswordResetResponse>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.forgotPassword(request.getEmail()));
+    }
+
+    /**
+     * Sets a new password using the one-time token emailed/linked from
+     * forgot-password. Public. The new password must satisfy the same policy
+     * as registration (8–10 characters with upper, lower, digit, special).
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(
+                authService.resetPassword(request.getToken(), request.getNewPassword()));
+    }
+
+    /**
      * Lists active workers for the employer job-assignment picker.
      * The path is permitted at the security layer (see {@code SecurityConfig})
      * so direct Feign callers work; EMPLOYER/ADMIN authorisation is enforced

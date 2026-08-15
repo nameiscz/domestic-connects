@@ -21,7 +21,7 @@ const renderPage = (token = 'reset-token-123') =>
     </MemoryRouter>
   );
 
-const fillPasswords = async (user, password = 'newsecret123') => {
+const fillPasswords = async (user, password = 'Newsec1!') => {
   await user.type(screen.getByLabelText('New password'), password);
   await user.type(screen.getByLabelText('Confirm new password'), password);
 };
@@ -54,7 +54,7 @@ describe('ResetPassword', () => {
 
     await user.click(screen.getByRole('button', { name: /update password/i }));
 
-    expect(resetPassword).toHaveBeenCalledWith('reset-token-123', 'newsecret123');
+    expect(resetPassword).toHaveBeenCalledWith('reset-token-123', 'Newsec1!');
     expect(
       await screen.findByRole('heading', { name: /password updated/i })
     ).toBeInTheDocument();
@@ -91,9 +91,37 @@ describe('ResetPassword', () => {
     await user.click(screen.getByRole('button', { name: /update password/i }));
 
     expect(
-      await screen.findByText('Password must be at least 6 characters.')
+      await screen.findByText('Password must be 8–10 characters long.')
     ).toBeInTheDocument();
     expect(screen.getByText('Passwords do not match.')).toBeInTheDocument();
+    expect(useAuth().resetPassword).not.toHaveBeenCalled();
+  });
+
+  it('rejects a password longer than 10 characters', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await fillPasswords(user, 'Newsecret12!');
+    await user.click(screen.getByRole('button', { name: /update password/i }));
+
+    expect(
+      await screen.findByText('Password must be 8–10 characters long.')
+    ).toBeInTheDocument();
+    expect(useAuth().resetPassword).not.toHaveBeenCalled();
+  });
+
+  it('rejects a password missing uppercase, number, or special characters', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await fillPasswords(user, 'newsecret1');
+    await user.click(screen.getByRole('button', { name: /update password/i }));
+
+    expect(
+      await screen.findByText(
+        'Password must include uppercase, lowercase, a number, and a special character.'
+      )
+    ).toBeInTheDocument();
     expect(useAuth().resetPassword).not.toHaveBeenCalled();
   });
 

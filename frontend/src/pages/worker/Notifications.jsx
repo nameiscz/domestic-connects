@@ -128,13 +128,6 @@ export default function Notifications() {
             </p>
           </div>
         </div>
-      ) : loading && notifications === null ? (
-        <div className="text-center py-5" data-testid="notifications-loading">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading notifications…</span>
-          </div>
-          <p className="text-muted mt-3 mb-0">Fetching your inbox…</p>
-        </div>
       ) : error ? (
         <div className="alert alert-danger shadow-sm" role="alert">
           <h4 className="alert-heading h6">Couldn&apos;t load your notifications</h4>
@@ -146,6 +139,16 @@ export default function Notifications() {
           >
             Try again
           </button>
+        </div>
+      ) : notifications === null ? (
+        /* In-flight fetch, or the initial fetch was aborted (e.g. by React
+           StrictMode's dev remount) — keep showing the loading state rather
+           than touching notifications.length on a null value. */
+        <div className="text-center py-5" data-testid="notifications-loading">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading notifications…</span>
+          </div>
+          <p className="text-muted mt-3 mb-0">Fetching your inbox…</p>
         </div>
       ) : notifications.length === 0 ? (
         <div className="card shadow-sm">
@@ -181,7 +184,7 @@ export default function Notifications() {
                   )}
                   <div className="flex-grow-1">
                     <div className="d-flex flex-wrap align-items-center gap-2">
-                      <span className={`badge bg-${meta.variant}`}>
+                      <span className={`badge badge-soft-${meta.variant}`}>
                         {meta.label}
                       </span>
                       <span className="text-muted small">

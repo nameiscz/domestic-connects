@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_HOME } from '../constants/roles';
+import Logo from '../components/Logo';
+import PasswordChecklist from '../components/PasswordChecklist';
 import { errorMessage } from '../utils/errors';
-import { EMAIL_RE } from '../utils/validation';
+import { EMAIL_RE, passwordError } from '../utils/validation';
 
 // Registration is only open to workers and employers — admin accounts are
 // provisioned by existing admins, never self-signed-up.
@@ -41,11 +43,8 @@ export default function Register() {
     } else if (!EMAIL_RE.test(form.email.trim())) {
       next.email = 'Enter a valid email address.';
     }
-    if (!form.password) {
-      next.password = 'Password is required.';
-    } else if (form.password.length < 6) {
-      next.password = 'Password must be at least 6 characters.';
-    }
+    const passwordErr = passwordError(form.password);
+    if (passwordErr) next.password = passwordErr;
     if (!form.role) {
       next.role = 'Please choose a role.';
     }
@@ -81,7 +80,10 @@ export default function Register() {
     <div className="min-vh-100 d-flex align-items-center bg-light py-5">
       <div className="container" style={{ maxWidth: 480 }}>
         <div className="text-center mb-4">
-          <h1 className="h3 fw-bold text-primary mb-1">Domestic Connects</h1>
+          <h1 className="auth-brand mb-1">
+            <Logo size={30} />
+            Domestic Connects
+          </h1>
           <p className="text-muted mb-0">Create your account</p>
         </div>
 
@@ -141,7 +143,7 @@ export default function Register() {
                     name="password"
                     type={showPassword ? 'text' : 'password'}
                     className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                    placeholder="At least 6 characters"
+                    placeholder="8–10 characters with A–Z, a–z, 0–9, special"
                     value={form.password}
                     onChange={handleChange}
                     aria-invalid={Boolean(errors.password)}
@@ -160,6 +162,7 @@ export default function Register() {
                 {errors.password && (
                   <div className="invalid-feedback">{errors.password}</div>
                 )}
+                <PasswordChecklist value={form.password} />
               </div>
 
               <div className="mb-4">

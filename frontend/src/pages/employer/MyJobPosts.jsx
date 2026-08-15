@@ -7,6 +7,7 @@ import { useToasts } from '../../hooks/useToasts';
 import ToastStack from '../../components/ToastStack';
 import JobStatusBadge from '../../components/JobStatusBadge';
 import Modal from '../../components/Modal';
+import WorkerProfileCard from '../../components/WorkerProfileCard';
 
 export default function MyJobPosts() {
   const { currentUser } = useAuth();
@@ -19,11 +20,22 @@ export default function MyJobPosts() {
   const [deletingId, setDeletingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [assignTarget, setAssignTarget] = useState(null);
+  const [applicantsTarget, setApplicantsTarget] = useState(null);
+  const [applications, setApplications] = useState([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [applicationsError, setApplicationsError] = useState('');
+  const [reviewingApplication, setReviewingApplication] = useState(null);
   const [workers, setWorkers] = useState([]);
   const [workersLoading, setWorkersLoading] = useState(false);
   const [workersError, setWorkersError] = useState('');
   const [selectedWorkerId, setSelectedWorkerId] = useState('');
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState('');
+  const [profileReviewed, setProfileReviewed] = useState(false);
   const [assigningId, setAssigningId] = useState(null);
+  const [acceptingId, setAcceptingId] = useState(null);
+  const [decliningId, setDecliningId] = useState(null);
   const { toasts, pushToast, dismissToast } = useToasts();
 
   const fetchJobs = useCallback(
@@ -95,6 +107,101 @@ export default function MyJobPosts() {
   };
 
   // ------------------------------------------------------------------
+  // Applications flow (workers apply; employer reviews the profile, then
+  // accepts — which assigns — or declines).
+  // ------------------------------------------------------------------
+  const openApplicantsModal = (job) => {
+    if (deletingId || assigningId || acceptingId) return;
+    setAssignTarget(null);
+    setReviewingApplication(null);
+    setApplicantsTarget(job);
+    setApplications([]);
+    setApplicationsLoading(true);
+    setApplicationsError('');
+    loadApplications(job.id);
+  };
+
+  const closeApplicantsModal = useCallback(() => {
+    if (acceptingId || decliningId) return;
+    setApplicantsTarget(null);
+    setReviewingApplication(null);
+  }, [acceptingId, decliningId]);
+
+  const loadApplications = useCallback(async (jobId, signal) => {
+    setApplicationsLoading(true);
+    setApplicationsError('');
+    try {
+      const { data } = await axiosInstance.get(`/api/jobs/${jobId}/applications`, {
+        signal,
+      });
+      setApplications(Array.isArray(data) ? data : []);
+    } catch (err) {
+      if (err?.code !== 'ERR_CANCELED') {
+        setApplicationsError(
+          err.response?.data?.message || 'Unable to load applications.'
+        );
+      }
+    } finally {
+      setApplicationsLoading(false);
+    }
+  }, []);
+
+  const openReviewApplication = (application) => {
+    if (acceptingId || decliningId) return;
+    setReviewingApplication(application);
+    setProfileReviewed(false);
+    setSelectedWorkerId(application.workerId);
+  };
+
+  const executeAccept = async () => {
+    if (!applicantsTarget || !reviewingApplication || !profileReviewed || acceptingId) return;
+    const job = applicantsTarget;
+    setAcceptingId(reviewingApplication.id);
+    try {
+      await axiosInstance.post(
+        `/api/jobs/${job.id}/applications/${reviewingApplication.id}/accept`
+      );
+      setJobs((prev) =>
+        prev.map((j) => (j.id === job.id ? { ...j, status: 'ASSIGNED' } : j))
+      );
+      pushToast(`Application accepted — worker assigned to "${job.title}".`);
+      setApplicantsTarget(null);
+      setReviewingApplication(null);
+    } catch (err) {
+      pushToast(
+        err.response?.data?.message || 'Unable to accept the application.',
+        'danger'
+      );
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+
+  const executeDecline = async (application) => {
+    if (!applicantsTarget || decliningId) return;
+    const job = applicantsTarget;
+    setDecliningId(application.id);
+    try {
+      await axiosInstance.post(
+        `/api/jobs/${job.id}/applications/${application.id}/decline`
+      );
+      setApplications((prev) =>
+        prev.map((a) =>
+          a.id === application.id ? { ...a, status: 'DECLINED' } : a
+        )
+      );
+      pushToast('Application declined.');
+    } catch (err) {
+      pushToast(
+        err.response?.data?.message || 'Unable to decline the application.',
+        'danger'
+      );
+    } finally {
+      setDecliningId(null);
+    }
+  };
+
+  // ------------------------------------------------------------------
   // Assign-worker flow
   // ------------------------------------------------------------------
   const openAssignModal = (job) => {
@@ -106,6 +213,9 @@ export default function MyJobPosts() {
     setDeleteTarget(null);
     setAssignTarget(job);
   };
+
+  const selectedWorker =
+    workers.find((w) => String(w.id) === String(selectedWorkerId)) || null;
 
   // Once the worker pool has loaded, hand focus to the picker (the modal's
   // mount-time data-autofocus can't reach it — it renders after the fetch).
@@ -137,22 +247,98 @@ export default function MyJobPosts() {
     }
   }, []);
 
-  // Load the worker pool each time the assign modal opens.
+  // Load the worker pool each time the assign or applicants modal opens.
   useEffect(() => {
-    if (!assignTarget) return undefined;
-    setSelectedWorkerId('');
+    if (!assignTarget && !applicantsTarget) return undefined;
+    if (assignTarget) {
+      setSelectedWorkerId('');
+      setSelectedReport(null);
+      setProfileReviewed(false);
+    }
     const controller = new AbortController();
     loadWorkers(controller.signal);
     return () => controller.abort();
-  }, [assignTarget, loadWorkers]);
+  }, [assignTarget, applicantsTarget, loadWorkers]);
+
+  // When a worker is picked, fetch their performance profile so the employer
+  // can review it (rating, review count, recent reviews) before assigning.
+  useEffect(() => {
+    if (!assignTarget || !selectedWorkerId) {
+      setSelectedReport(null);
+      setReportLoading(false);
+      setReportError('');
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    (async () => {
+      setReportLoading(true);
+      setReportError('');
+      try {
+        const { data } = await axiosInstance.get(
+          `/api/performance/worker/${selectedWorkerId}`,
+          { signal: controller.signal }
+        );
+        setSelectedReport(data);
+      } catch (err) {
+        if (err?.code !== 'ERR_CANCELED') {
+          setReportError(
+            err.response?.data?.message || 'Unable to load the worker profile.'
+          );
+        }
+      } finally {
+        setReportLoading(false);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [assignTarget, selectedWorkerId]);
+
+  // Fetch the applicant's performance profile when the employer opens the
+  // review view in the applications modal.
+  useEffect(() => {
+    if (!reviewingApplication?.workerId) {
+      setSelectedReport(null);
+      setReportLoading(false);
+      setReportError('');
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    (async () => {
+      setReportLoading(true);
+      setReportError('');
+      try {
+        const { data } = await axiosInstance.get(
+          `/api/performance/worker/${reviewingApplication.workerId}`,
+          { signal: controller.signal }
+        );
+        setSelectedReport(data);
+      } catch (err) {
+        if (err?.code !== 'ERR_CANCELED') {
+          setReportError(
+            err.response?.data?.message || 'Unable to load the worker profile.'
+          );
+        }
+      } finally {
+        setReportLoading(false);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [reviewingApplication]);
 
   const executeAssign = async () => {
-    if (!assignTarget || !selectedWorkerId || assigningId) return;
+    if (!assignTarget || !selectedWorkerId || !profileReviewed || assigningId) return;
     const job = assignTarget;
 
     setAssigningId(job.id);
     try {
-      await axiosInstance.post(`/api/jobs/${job.id}/assign/${selectedWorkerId}`);
+      // Employers must review the worker's profile before assigning — the
+      // backend only accepts the reviewed variant for EMPLOYER/ADMIN callers.
+      await axiosInstance.post(
+        `/api/jobs/${job.id}/assign/${selectedWorkerId}/reviewed`
+      );
       setJobs((prev) =>
         prev.map((j) => (j.id === job.id ? { ...j, status: 'ASSIGNED' } : j))
       );
@@ -277,9 +463,25 @@ export default function MyJobPosts() {
                               type="button"
                               className="btn btn-outline-success btn-sm"
                               onClick={() => openAssignModal(job)}
-                              disabled={Boolean(deletingId) || Boolean(assigningId)}
+                              disabled={
+                                Boolean(deletingId) || Boolean(assigningId)
+                              }
                             >
                               Assign
+                            </button>
+                          )}
+                          {job.status === 'OPEN' && (
+                            <button
+                              type="button"
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() => openApplicantsModal(job)}
+                              disabled={
+                                Boolean(deletingId) ||
+                                Boolean(assigningId) ||
+                                Boolean(acceptingId)
+                              }
+                            >
+                              Applicants
                             </button>
                           )}
                           <button
@@ -425,7 +627,10 @@ export default function MyJobPosts() {
                     data-autofocus
                     className="form-select"
                     value={selectedWorkerId}
-                    onChange={(e) => setSelectedWorkerId(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedWorkerId(e.target.value);
+                      setProfileReviewed(false);
+                    }}
                   >
                     <option value="">Select a worker…</option>
                     {workers.map((worker) => (
@@ -434,6 +639,64 @@ export default function MyJobPosts() {
                       </option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {selectedWorkerId && (
+                <div className="mt-3">
+                  <div className="d-flex align-items-center justify-content-between mb-1">
+                    <span className="text-muted small text-uppercase">
+                      Worker profile
+                    </span>
+                    {reportError ? (
+                      <span className="text-danger small">{reportError}</span>
+                    ) : (
+                      <Link
+                        to={`/employer/workers/${selectedWorkerId}`}
+                        className="small"
+                        onClick={closeAssignModal}
+                      >
+                        View full profile →
+                      </Link>
+                    )}
+                  </div>
+                  {reportError ? (
+                    <div className="alert alert-danger py-2 mb-0" role="alert">
+                      <p className="mb-2 small">{reportError}</p>
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => setSelectedWorkerId((v) => `${v}`)}
+                      >
+                        Retry
+                      </button>
+                    </div>
+                  ) : (
+                    <WorkerProfileCard
+                      report={selectedReport}
+                      workerName={selectedWorker?.name}
+                      loading={reportLoading}
+                      compact
+                    />
+                  )}
+
+                  <div className="form-check mt-3">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="profile-reviewed-check"
+                      checked={profileReviewed}
+                      onChange={(e) => setProfileReviewed(e.target.checked)}
+                      disabled={reportLoading || Boolean(reportError)}
+                    />
+                    <label
+                      className="form-check-label small"
+                      htmlFor="profile-reviewed-check"
+                    >
+                      I have reviewed this worker&apos;s profile (rating, reviews
+                      and attendance) before assigning them work.
+                    </label>
+                  </div>
                 </div>
               )}
             </div>
@@ -450,7 +713,9 @@ export default function MyJobPosts() {
                 type="button"
                 className="btn btn-primary"
                 onClick={executeAssign}
-                disabled={!selectedWorkerId || Boolean(assigningId)}
+                disabled={
+                  !selectedWorkerId || !profileReviewed || Boolean(assigningId)
+                }
               >
                 {assigningId ? (
                   <>
@@ -460,10 +725,206 @@ export default function MyJobPosts() {
                     />
                     Assigning…
                   </>
-                ) : (
+                ) : profileReviewed ? (
                   'Assign worker'
+                ) : (
+                  'Review profile to assign'
                 )}
               </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Applications modal: applicant list + review/accept/decline */}
+      {applicantsTarget && (
+        <Modal
+          onClose={closeApplicantsModal}
+          labelledBy="applicants-modal-title"
+        >
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title" id="applicants-modal-title">
+                Applicants — {applicantsTarget.title}
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                onClick={closeApplicantsModal}
+              />
+            </div>
+            <div className="modal-body">
+              <p className="text-muted small mb-3">
+                Workers who applied to this job. Review a worker&apos;s profile
+                before accepting.
+              </p>
+
+              {applicationsLoading ? (
+                <div className="text-center py-4">
+                  <span
+                    className="spinner-border spinner-border-sm text-primary"
+                    role="status"
+                  >
+                    <span className="visually-hidden">Loading applications…</span>
+                  </span>
+                  <p className="text-muted small mt-2 mb-0">
+                    Loading applications…
+                  </p>
+                </div>
+              ) : applicationsError ? (
+                <div className="alert alert-danger py-2 mb-0" role="alert">
+                  <p className="mb-2">{applicationsError}</p>
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={() => loadApplications(applicantsTarget.id)}
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : applications.length === 0 ? (
+                <p className="text-muted mb-0">
+                  No applications yet — workers who apply will show up here.
+                </p>
+              ) : reviewingApplication ? (
+                /* Review the selected applicant's profile, then accept */
+                <div>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <span className="text-muted small text-uppercase">
+                      Reviewing applicant
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => setReviewingApplication(null)}
+                      disabled={Boolean(acceptingId)}
+                    >
+                      ← Back to applicants
+                    </button>
+                  </div>
+                  <WorkerProfileCard
+                    report={selectedReport}
+                    workerName={
+                      workers.find(
+                        (w) =>
+                          String(w.id) ===
+                          String(reviewingApplication.workerId)
+                      )?.name
+                    }
+                    loading={reportLoading}
+                  />
+                  <div className="form-check mt-3">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="application-reviewed-check"
+                      checked={profileReviewed}
+                      onChange={(e) => setProfileReviewed(e.target.checked)}
+                      disabled={reportLoading || Boolean(reportError)}
+                    />
+                    <label
+                      className="form-check-label small"
+                      htmlFor="application-reviewed-check"
+                    >
+                      I have reviewed this worker&apos;s profile before accepting
+                      their application.
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <ul className="list-unstyled mb-0">
+                  {applications.map((application) => {
+                    const worker = workers.find(
+                      (w) => String(w.id) === String(application.workerId)
+                    );
+                    const isDeclining = decliningId === application.id;
+                    return (
+                      <li
+                        key={application.id}
+                        className="d-flex flex-wrap align-items-center gap-2 py-2 border-bottom"
+                      >
+                        <div className="flex-grow-1">
+                          <div className="fw-semibold">
+                            {worker?.name || `Worker #${application.workerId}`}
+                          </div>
+                          <div className="text-muted small">
+                            Applied {formatDate(application.createdAt)}
+                          </div>
+                        </div>
+                        {application.status === 'PENDING' ? (
+                          <div className="d-inline-flex gap-2">
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              onClick={() =>
+                                openReviewApplication(application)
+                              }
+                              disabled={
+                                Boolean(acceptingId) || Boolean(decliningId)
+                              }
+                            >
+                              Review &amp; accept
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-danger btn-sm"
+                              onClick={() => executeDecline(application)}
+                              disabled={
+                                Boolean(acceptingId) || Boolean(decliningId)
+                              }
+                            >
+                              {isDeclining ? 'Declining…' : 'Decline'}
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            className={`badge ${
+                              application.status === 'ACCEPTED'
+                                ? 'badge-soft-success'
+                                : 'badge-soft-secondary'
+                            }`}
+                          >
+                            {application.status}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={closeApplicantsModal}
+                disabled={Boolean(acceptingId) || Boolean(decliningId)}
+              >
+                Close
+              </button>
+              {reviewingApplication && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={executeAccept}
+                  disabled={!profileReviewed || Boolean(acceptingId)}
+                >
+                  {acceptingId ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-1"
+                        aria-hidden="true"
+                      />
+                      Accepting…
+                    </>
+                  ) : profileReviewed ? (
+                    'Accept & assign worker'
+                  ) : (
+                    'Review profile to accept'
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </Modal>

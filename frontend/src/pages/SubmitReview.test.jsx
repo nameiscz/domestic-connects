@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import SubmitReview from './SubmitReview';
@@ -14,6 +14,7 @@ const { default: axiosInstance } = vi.hoisted(() => ({
 vi.mock('../api/axiosInstance', () => ({ default: axiosInstance }));
 
 const CURRENT_USER = { id: 5, name: 'Mark', role: 'EMPLOYER' };
+const ADMIN_USER = { id: 1, name: 'Sara', role: 'ADMIN' };
 
 const WORKERS = [
   { id: 11, name: 'Ana', email: 'ana@example.com', role: 'WORKER', active: true },
@@ -104,10 +105,39 @@ describe('SubmitReview', () => {
     expect(screen.getByLabelText('Job').value).toBe('');
   });
 
+  it('lists only workers assigned to the employer’s job posts', async () => {
+    // Carol (13) has no ASSIGNED job with employer 5 — she must not appear.
+    mockData({
+      workers: [
+        ...WORKERS,
+        { id: 13, name: 'Carol', email: 'carol@example.com', role: 'WORKER', active: true },
+      ],
+    });
+    renderSubmitReview();
+
+    const workerSelect = await screen.findByLabelText('Worker');
+    const labels = within(workerSelect)
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(labels.join(' | ')).toContain('Ana (ana@example.com)');
+    expect(labels.join(' | ')).toContain('Ben (ben@example.com)');
+    expect(labels.join(' | ')).not.toContain('Carol');
+  });
+
+  it('shows a hint when the employer has no assigned workers yet', async () => {
+    // All of the employer's jobs are still OPEN — nobody hired yet.
+    mockData({ jobs: [JOBS[0]] });
+    renderSubmitReview();
+
+    expect(await screen.findByText(/no assigned workers yet/i)).toBeInTheDocument();
+  });
+
   it('explains when the selected worker has no assigned jobs to review', async () => {
     mockData({ jobs: [JOBS[0]] }); // only an OPEN job exists
     const user = userEvent.setup();
-    renderSubmitReview();
+    // Admins see the full worker directory, so this state is reachable for
+    // them even when the worker has no assigned job yet.
+    renderSubmitReview(ADMIN_USER);
 
     await screen.findByLabelText('Worker');
     await user.selectOptions(screen.getByLabelText('Worker'), '11');

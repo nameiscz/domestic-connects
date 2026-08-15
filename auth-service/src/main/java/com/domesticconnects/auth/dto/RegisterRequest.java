@@ -1,6 +1,7 @@
 package com.domesticconnects.auth.dto;
 
 import com.domesticconnects.auth.entity.Role;
+import com.domesticconnects.common.validation.ValidPassword;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,8 +19,7 @@ public class RegisterRequest {
     @Email(message = "Email must be valid")
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
+    @ValidPassword
     private String password;
 
     @NotNull(message = "Role is required")

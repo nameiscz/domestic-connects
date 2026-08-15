@@ -1,10 +1,12 @@
 /**
- * Shared Bootstrap stat card for dashboard overviews: an emoji, a headline
- * value, an uppercase label and an optional footnote. The optional `sample`
- * flag renders a small "sample" badge for placeholder values. The hover-lift
- * effect lives in src/index.css.
+ * Shared Bootstrap stat card for dashboard overviews: an icon, a headline
+ * value, an uppercase label and an optional footnote. Icons are Lucide
+ * components (passed via `icon`); a plain-string emoji still works as a
+ * fallback. The optional `sample` flag renders a small "sample" badge for
+ * placeholder values. The hover-lift effect lives in src/index.css.
  */
 export default function StatCard({
+  icon,
   emoji,
   label,
   value,
@@ -12,13 +14,21 @@ export default function StatCard({
   accent = 'primary',
   sample = false,
 }) {
+  const Icon = typeof icon === 'string' ? null : icon;
+
   return (
     <div className="col-6 col-lg-3">
       <div className="card stat-card shadow-sm h-100">
         <div className="card-body d-flex flex-column">
           <div className="d-flex justify-content-between align-items-start mb-2">
-            <span className="fs-4" role="img" aria-hidden="true">
-              {emoji}
+            <span className={`stat-icon stat-icon-${accent}`} aria-hidden="true">
+              {Icon ? (
+                <Icon size={20} strokeWidth={2.2} />
+              ) : (
+                <span className="fs-5" role="img" aria-hidden="true">
+                  {emoji}
+                </span>
+              )}
             </span>
             {sample && (
               <span className="badge bg-light text-muted border small">

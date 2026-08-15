@@ -36,6 +36,11 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
 
+# Role attendance-service presents to job-service on direct Feign calls
+# (bypassing the gateway's header forwarding).
+attendance:
+  internal-role: ADMIN
+
 logging:
   level:
     com.domesticconnects.attendance: DEBUG

@@ -1,7 +1,766 @@
 /* ---------------------------------------------------------------------------
- * App-wide custom styles (Bootstrap is imported separately in main.jsx).
- * These rules previously lived in per-component <style> blocks; keeping them
- * in one place avoids duplicated rules and keeps the effects easy to find.
+ * Domestic Connects design system.
+ *
+ * The app is built on Bootstrap 5.3 utility classes (card, btn, bg-primary…),
+ * so most of the redesign happens here by overriding Bootstrap's CSS custom
+ * properties. Component classes like .btn-primary bake their colors at build
+ * time, so those get explicit --bs-btn-* overrides below; utilities like
+ * bg-primary/badge follow --bs-*-rgb automatically.
+ * ------------------------------------------------------------------------- */
+
+/* ---------------------------------------------------------------------------
+ * Design tokens — light is the default; the [data-bs-theme='dark'] block below
+ * re-maps the same variables for dark mode. :root always matches, so the dark
+ * block must come AFTER these light values in the stylesheet.
+ * ------------------------------------------------------------------------- */
+:root,
+[data-bs-theme='light'] {
+  /* Palette (shared with the marketing landing page) */
+  --dc-teal-900: #0a3b3f;
+  --dc-teal-700: #0f5257;
+  --dc-teal-500: #1b7a80;
+  --dc-teal-100: #dceae8;
+  --dc-marigold-500: #f2a93b;
+  --dc-marigold-600: #d98f1f;
+  --dc-marigold-100: #fdecc8;
+  --dc-bg: #f2f4ef;
+  --dc-card: #ffffff;
+  --dc-ink: #14231f;
+  --dc-ink-soft: #4b5a54;
+  --dc-border: #dee3da;
+  /* Semantic: heading text + deep brand surfaces (adapt per theme) */
+  --dc-heading: #0a3b3f;
+  --dc-deep: #0a3b3f;
+
+  /* Bootstrap theme mapping */
+  --bs-primary: #0f5257;
+  --bs-primary-rgb: 15, 82, 87;
+  --bs-secondary: #4b5a54;
+  --bs-secondary-rgb: 75, 90, 84;
+  --bs-success: #2f7a55;
+  --bs-success-rgb: 47, 122, 85;
+  --bs-info: #1b7a80;
+  --bs-info-rgb: 27, 122, 128;
+  --bs-warning: #f2a93b;
+  --bs-warning-rgb: 242, 169, 59;
+  --bs-danger: #c4453c;
+  --bs-danger-rgb: 196, 69, 60;
+  --bs-light: #f2f4ef;
+  --bs-light-rgb: 242, 244, 239;
+  --bs-dark: #0a3b3f;
+  --bs-dark-rgb: 10, 59, 63;
+
+  --bs-body-color: #14231f;
+  --bs-body-color-rgb: 20, 35, 31;
+  --bs-body-bg: #f7f8f4;
+  --bs-border-color: #dee3da;
+  --bs-border-color-translucent: rgba(222, 227, 218, 0.55);
+
+  --bs-link-color: #0f5257;
+  --bs-link-hover-color: #0a3b3f;
+  --bs-focus-ring-color: rgba(15, 82, 87, 0.25);
+  --bs-focus-ring-width: 0.2rem;
+
+  --bs-border-radius: 0.625rem;
+  --bs-border-radius-sm: 0.45rem;
+  --bs-border-radius-lg: 1rem;
+  --bs-border-radius-xl: 1.25rem;
+  --bs-border-radius-pill: 50rem;
+  --bs-badge-border-radius: 999px;
+
+  --bs-body-font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI',
+    Roboto, sans-serif;
+
+  /* Alert emphasis pairs (subtle backgrounds + readable text) */
+  --bs-primary-bg-subtle: #dceae8;
+  --bs-primary-text-emphasis: #0a3b3f;
+  --bs-primary-border-subtle: #b3cdc9;
+  --bs-success-bg-subtle: #e1efe7;
+  --bs-success-text-emphasis: #1f5c3e;
+  --bs-success-border-subtle: #bcd8c8;
+  --bs-warning-bg-subtle: #fdecc8;
+  --bs-warning-text-emphasis: #7a5410;
+  --bs-warning-border-subtle: #f7d98f;
+  --bs-danger-bg-subtle: #fbe4e2;
+  --bs-danger-text-emphasis: #8f2f28;
+  --bs-danger-border-subtle: #f2c2be;
+}
+
+/* ---------------------------------------------------------------------------
+ * Dark theme. Bootstrap's own [data-bs-theme='dark'] block flips the neutral
+ * surfaces (cards, forms, tables, modals, alerts…); this block restores our
+ * brand mapping and custom component colors on top of it.
+ * ------------------------------------------------------------------------- */
+[data-bs-theme='dark'] {
+  --dc-bg: #0d1513;
+  --dc-card: #141d1a;
+  --dc-ink: #e6ece9;
+  --dc-ink-soft: #93a39c;
+  --dc-border: #27332e;
+  --dc-teal-100: #1b3033;
+  --dc-teal-500: #3fa4ab;
+  --dc-teal-700: #2f8a91;
+  --dc-teal-900: #0a3b3f;
+  --dc-marigold-100: #33270f;
+  --dc-marigold-500: #f2a93b;
+  --dc-marigold-600: #f5b654;
+  --dc-heading: #e9efec;
+  --dc-deep: #14555a;
+
+  --bs-primary: #2f8a91;
+  --bs-primary-rgb: 47, 138, 145;
+  --bs-secondary: #93a39c;
+  --bs-secondary-rgb: 147, 163, 156;
+  --bs-success: #3e9a6c;
+  --bs-success-rgb: 62, 154, 108;
+  --bs-info: #3fa4ab;
+  --bs-info-rgb: 63, 164, 171;
+  --bs-warning: #f5b654;
+  --bs-warning-rgb: 245, 182, 84;
+  --bs-danger: #d96a60;
+  --bs-danger-rgb: 217, 106, 96;
+  --bs-light: #141d1a;
+  --bs-light-rgb: 20, 29, 26;
+  --bs-dark: #0d1513;
+  --bs-dark-rgb: 13, 21, 19;
+
+  --bs-body-color: #e6ece9;
+  --bs-body-color-rgb: 230, 236, 233;
+  --bs-body-bg: #0d1513;
+  --bs-border-color: #27332e;
+  --bs-border-color-translucent: rgba(39, 51, 46, 0.55);
+
+  --bs-link-color: #5bb5bc;
+  --bs-link-hover-color: #7ec9cf;
+  --bs-focus-ring-color: rgba(63, 164, 171, 0.35);
+
+  --bs-primary-bg-subtle: #1b3033;
+  --bs-primary-text-emphasis: #7ec9cf;
+  --bs-primary-border-subtle: #2b464a;
+  --bs-success-bg-subtle: #173526;
+  --bs-success-text-emphasis: #6cc795;
+  --bs-success-border-subtle: #245239;
+  --bs-warning-bg-subtle: #33270f;
+  --bs-warning-text-emphasis: #f5b654;
+  --bs-warning-border-subtle: #4a3a16;
+  --bs-danger-bg-subtle: #3a1d1b;
+  --bs-danger-text-emphasis: #ef9a93;
+  --bs-danger-border-subtle: #572e2a;
+  --bs-info-bg-subtle: #1b3033;
+  --bs-info-text-emphasis: #7ec9cf;
+  --bs-info-border-subtle: #2b464a;
+  --bs-secondary-bg-subtle: #1d2623;
+  --bs-secondary-text-emphasis: #b9c6c0;
+  --bs-secondary-border-subtle: #2c3934;
+}
+
+/* --- Dark: buttons (Bootstrap bakes colors, so re-map each variant) --- */
+[data-bs-theme='dark'] .btn-primary {
+  --bs-btn-bg: #2f8a91;
+  --bs-btn-border-color: #2f8a91;
+  --bs-btn-hover-bg: #3fa4ab;
+  --bs-btn-hover-border-color: #3fa4ab;
+  --bs-btn-active-bg: #256e74;
+  --bs-btn-active-border-color: #256e74;
+  --bs-btn-disabled-bg: #2f8a91;
+  --bs-btn-disabled-border-color: #2f8a91;
+  --bs-btn-focus-shadow-rgb: 47, 138, 145;
+}
+[data-bs-theme='dark'] .btn-success {
+  --bs-btn-bg: #3e9a6c;
+  --bs-btn-border-color: #3e9a6c;
+  --bs-btn-hover-bg: #4fae7e;
+  --bs-btn-hover-border-color: #4fae7e;
+  --bs-btn-active-bg: #317856;
+  --bs-btn-active-border-color: #317856;
+  --bs-btn-disabled-bg: #3e9a6c;
+  --bs-btn-disabled-border-color: #3e9a6c;
+  --bs-btn-focus-shadow-rgb: 62, 154, 108;
+}
+[data-bs-theme='dark'] .btn-danger {
+  --bs-btn-bg: #c8564d;
+  --bs-btn-border-color: #c8564d;
+  --bs-btn-hover-bg: #d96a60;
+  --bs-btn-hover-border-color: #d96a60;
+  --bs-btn-active-bg: #a83a32;
+  --bs-btn-active-border-color: #a83a32;
+  --bs-btn-disabled-bg: #c8564d;
+  --bs-btn-disabled-border-color: #c8564d;
+  --bs-btn-focus-shadow-rgb: 217, 106, 96;
+}
+[data-bs-theme='dark'] .btn-outline-primary {
+  --bs-btn-color: #5bb5bc;
+  --bs-btn-border-color: #5bb5bc;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #2f8a91;
+  --bs-btn-hover-border-color: #2f8a91;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #2f8a91;
+  --bs-btn-active-border-color: #2f8a91;
+  --bs-btn-disabled-color: #5bb5bc;
+  --bs-btn-disabled-border-color: #5bb5bc;
+  --bs-btn-focus-shadow-rgb: 91, 181, 188;
+}
+[data-bs-theme='dark'] .btn-outline-success {
+  --bs-btn-color: #6cc795;
+  --bs-btn-border-color: #6cc795;
+  --bs-btn-hover-color: #14231f;
+  --bs-btn-hover-bg: #6cc795;
+  --bs-btn-hover-border-color: #6cc795;
+  --bs-btn-active-color: #14231f;
+  --bs-btn-active-bg: #6cc795;
+  --bs-btn-active-border-color: #6cc795;
+  --bs-btn-disabled-color: #6cc795;
+  --bs-btn-disabled-border-color: #6cc795;
+  --bs-btn-focus-shadow-rgb: 108, 199, 149;
+}
+[data-bs-theme='dark'] .btn-outline-danger {
+  --bs-btn-color: #ef9a93;
+  --bs-btn-border-color: #ef9a93;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #c8564d;
+  --bs-btn-hover-border-color: #c8564d;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #c8564d;
+  --bs-btn-active-border-color: #c8564d;
+  --bs-btn-disabled-color: #ef9a93;
+  --bs-btn-disabled-border-color: #ef9a93;
+  --bs-btn-focus-shadow-rgb: 239, 154, 147;
+}
+[data-bs-theme='dark'] .btn-outline-secondary {
+  --bs-btn-color: #b9c6c0;
+  --bs-btn-border-color: #45544e;
+  --bs-btn-hover-color: #14231f;
+  --bs-btn-hover-bg: #b9c6c0;
+  --bs-btn-hover-border-color: #b9c6c0;
+  --bs-btn-active-color: #14231f;
+  --bs-btn-active-bg: #b9c6c0;
+  --bs-btn-active-border-color: #b9c6c0;
+  --bs-btn-disabled-color: #b9c6c0;
+  --bs-btn-disabled-border-color: #45544e;
+  --bs-btn-focus-shadow-rgb: 185, 198, 192;
+}
+
+/* --- Dark: soft badges, forms, tables, shared states --- */
+[data-bs-theme='dark'] .badge-soft-primary {
+  background: #1b3033;
+  color: #7ec9cf;
+  border-color: #2b464a;
+}
+[data-bs-theme='dark'] .badge-soft-success {
+  background: #173526;
+  color: #6cc795;
+  border-color: #245239;
+}
+[data-bs-theme='dark'] .badge-soft-warning {
+  background: #33270f;
+  color: #f5b654;
+  border-color: #4a3a16;
+}
+[data-bs-theme='dark'] .badge-soft-danger {
+  background: #3a1d1b;
+  color: #ef9a93;
+  border-color: #572e2a;
+}
+[data-bs-theme='dark'] .badge-soft-secondary {
+  background: #1d2623;
+  color: #b9c6c0;
+  border-color: #2c3934;
+}
+
+[data-bs-theme='dark'] .table-light {
+  --bs-table-bg: #16201d;
+  --bs-table-border-color: var(--dc-border);
+}
+[data-bs-theme='dark'] .form-control,
+[data-bs-theme='dark'] .form-select {
+  border-color: #33413c;
+}
+[data-bs-theme='dark'] .input-group-text {
+  background: #16201d;
+  color: #7ec9cf;
+  border-color: #33413c;
+}
+[data-bs-theme='dark'] .card .card-body.text-center.py-5 {
+  background: linear-gradient(180deg, #141d1a, #0f1714);
+}
+[data-bs-theme='dark'] .chip-wage {
+  background: #1b3033;
+  color: #9fd0d4;
+}
+[data-bs-theme='dark'] .chip-wage-day {
+  color: #7ec9cf;
+}
+
+/* Bootstrap's .bg-white utility is baked #fff — pull it to the surface color. */
+[data-bs-theme='dark'] .bg-white {
+  background-color: var(--dc-card) !important;
+}
+/* bg-light badges keep dark text via .text-dark — lift the text in dark. */
+[data-bs-theme='dark'] .badge.bg-light {
+  color: var(--dc-ink) !important;
+}
+
+/* --- Theme toggle button --- */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+.navbar .theme-toggle {
+  color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.navbar .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ---------------------------------------------------------------------------
+ * Typography — Fraunces (serif display) for headings, Jakarta Sans body.
+ * :where() keeps specificity at zero so utility colours (e.g. text-white on
+ * the welcome banners) still win.
+ * ------------------------------------------------------------------------- */
+:where(h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6) {
+  font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+body {
+  font-family: var(--bs-body-font-family);
+  color: var(--bs-body-color);
+}
+
+::selection {
+  background: rgba(242, 169, 59, 0.45);
+}
+
+/* ---------------------------------------------------------------------------
+ * Buttons — Bootstrap bakes component colors at build time, so override the
+ * --bs-btn-* custom properties (which the compiled CSS reads) per variant.
+ * ------------------------------------------------------------------------- */
+.btn-primary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #0f5257;
+  --bs-btn-border-color: #0f5257;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #0a3b3f;
+  --bs-btn-hover-border-color: #0a3b3f;
+  --bs-btn-focus-shadow-rgb: 15, 82, 87;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #093438;
+  --bs-btn-active-border-color: #093438;
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: #0f5257;
+  --bs-btn-disabled-border-color: #0f5257;
+}
+
+.btn-success {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #2f7a55;
+  --bs-btn-border-color: #2f7a55;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #256244;
+  --bs-btn-hover-border-color: #256244;
+  --bs-btn-focus-shadow-rgb: 47, 122, 85;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #20523a;
+  --bs-btn-active-border-color: #20523a;
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: #2f7a55;
+  --bs-btn-disabled-border-color: #2f7a55;
+}
+
+.btn-danger {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #c4453c;
+  --bs-btn-border-color: #c4453c;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #a83a32;
+  --bs-btn-hover-border-color: #a83a32;
+  --bs-btn-focus-shadow-rgb: 196, 69, 60;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #8f2f28;
+  --bs-btn-active-border-color: #8f2f28;
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: #c4453c;
+  --bs-btn-disabled-border-color: #c4453c;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #0f5257;
+  --bs-btn-border-color: #0f5257;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #0f5257;
+  --bs-btn-hover-border-color: #0f5257;
+  --bs-btn-focus-shadow-rgb: 15, 82, 87;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #0f5257;
+  --bs-btn-active-border-color: #0f5257;
+  --bs-btn-disabled-color: #0f5257;
+  --bs-btn-disabled-border-color: #0f5257;
+}
+
+.btn-outline-success {
+  --bs-btn-color: #2f7a55;
+  --bs-btn-border-color: #2f7a55;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #2f7a55;
+  --bs-btn-hover-border-color: #2f7a55;
+  --bs-btn-focus-shadow-rgb: 47, 122, 85;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #2f7a55;
+  --bs-btn-active-border-color: #2f7a55;
+  --bs-btn-disabled-color: #2f7a55;
+  --bs-btn-disabled-border-color: #2f7a55;
+}
+
+.btn-outline-danger {
+  --bs-btn-color: #c4453c;
+  --bs-btn-border-color: #c4453c;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #c4453c;
+  --bs-btn-hover-border-color: #c4453c;
+  --bs-btn-focus-shadow-rgb: 196, 69, 60;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #c4453c;
+  --bs-btn-active-border-color: #c4453c;
+  --bs-btn-disabled-color: #c4453c;
+  --bs-btn-disabled-border-color: #c4453c;
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: #4b5a54;
+  --bs-btn-border-color: #9aa69f;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #4b5a54;
+  --bs-btn-hover-border-color: #4b5a54;
+  --bs-btn-focus-shadow-rgb: 75, 90, 84;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #4b5a54;
+  --bs-btn-active-border-color: #4b5a54;
+  --bs-btn-disabled-color: #4b5a54;
+  --bs-btn-disabled-border-color: #9aa69f;
+}
+
+/* Soft hover lift on primary actions (matches the marketing page). */
+.btn-primary,
+.btn-success,
+.btn-danger {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.btn-primary:hover,
+.btn-success:hover,
+.btn-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(10, 59, 63, 0.18);
+}
+
+/* ---------------------------------------------------------------------------
+ * Navbar
+ * ------------------------------------------------------------------------- */
+.navbar {
+  --bs-navbar-padding-y: 0.7rem;
+}
+
+.navbar-brand {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navbar-dark .navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 500;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  margin-inline: 0.1rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.navbar-dark .navbar-nav .nav-link.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* ---------------------------------------------------------------------------
+ * Cards, forms, tables, badges, misc
+ * ------------------------------------------------------------------------- */
+.card {
+  --bs-card-border-radius: 1rem;
+  --bs-card-border-color: var(--dc-border);
+  --bs-card-spacer-y: 1.25rem;
+  --bs-card-spacer-x: 1.25rem;
+}
+
+.card-header {
+  border-bottom-color: var(--dc-border);
+}
+
+.form-control,
+.form-select {
+  border-color: #d5dcd2;
+  padding-block: 0.55rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--dc-teal-500);
+  box-shadow: 0 0 0 0.25rem rgba(15, 82, 87, 0.14);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--dc-ink);
+}
+
+.input-group > .form-control:focus {
+  z-index: 0; /* keep the eye-toggle button clickable after focus */
+}
+
+.table > :not(caption) > * > * {
+  border-bottom-color: var(--dc-border);
+}
+
+.table thead th {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--dc-ink-soft);
+  font-weight: 700;
+}
+
+.table-light {
+  --bs-table-bg: #f6f8f4;
+  --bs-table-border-color: var(--dc-border);
+}
+
+.badge {
+  font-weight: 600;
+}
+
+.modal-content {
+  --bs-modal-border-radius: 1.1rem;
+  --bs-modal-border-color: var(--dc-border);
+}
+
+.toast {
+  --bs-toast-border-radius: 0.8rem;
+}
+
+.alert {
+  border-radius: 0.8rem;
+}
+
+/* Auth pages — brand block (the Logo mark sits inside the heading) */
+.auth-brand {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 600;
+  font-size: 1.75rem;
+  color: var(--dc-heading);
+  letter-spacing: -0.015em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+/* ---------------------------------------------------------------------------
+ * Tables
+ * ------------------------------------------------------------------------- */
+.table > :not(caption) > * > * {
+  padding: 0.8rem 1rem; /* Bootstrap bakes .5rem .5rem into the compiled CSS */
+  border-bottom-color: var(--dc-border);
+}
+
+.table thead th {
+  border-bottom-width: 2px;
+}
+
+/* Teal-tinted row hover instead of Bootstrap's gray. */
+.table-hover > tbody > tr:hover > * {
+  background-color: rgba(27, 122, 128, 0.055);
+}
+
+/* Round the table into the corners of the card it lives in. Longhand
+   corners so the :first-child/:last-child rules don't overwrite each other. */
+.card .table-responsive:first-child {
+  border-top-left-radius: calc(var(--bs-card-border-radius) - 2px);
+  border-top-right-radius: calc(var(--bs-card-border-radius) - 2px);
+}
+.card .table-responsive:last-child {
+  border-bottom-left-radius: calc(var(--bs-card-border-radius) - 2px);
+  border-bottom-right-radius: calc(var(--bs-card-border-radius) - 2px);
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------------------
+ * Soft (tinted) badges — the landing page's tag style, used for statuses.
+ * ------------------------------------------------------------------------- */
+.badge-soft-primary {
+  background: #dceae8;
+  color: #0a3b3f;
+  border: 1px solid #b3cdc9;
+}
+.badge-soft-success {
+  background: #e1efe7;
+  color: #1f5c3e;
+  border: 1px solid #bcd8c8;
+}
+.badge-soft-warning {
+  background: #fdecc8;
+  color: #7a5410;
+  border: 1px solid #f7d98f;
+}
+.badge-soft-danger {
+  background: #fbe4e2;
+  color: #8f2f28;
+  border: 1px solid #f2c2be;
+}
+.badge-soft-secondary {
+  background: #eef1ec;
+  color: #4b5a54;
+  border: 1px solid #dde3da;
+}
+
+/* ---------------------------------------------------------------------------
+ * Pagination — rounded links with a teal active state.
+ * ------------------------------------------------------------------------- */
+.pagination .page-link {
+  border-radius: 0.5rem;
+  margin: 0 0.2rem;
+  border-color: var(--dc-border);
+  color: var(--dc-teal-700);
+  font-weight: 500;
+}
+.pagination .page-item:first-child .page-link,
+.pagination .page-item:last-child .page-link {
+  border-radius: 0.5rem;
+}
+.pagination .page-link:hover {
+  background: var(--dc-teal-100);
+  border-color: var(--dc-border);
+  color: var(--dc-teal-900);
+}
+.pagination .page-item.active .page-link {
+  background: var(--dc-teal-700);
+  border-color: var(--dc-teal-700);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------------
+ * Shared states & form details
+ * ------------------------------------------------------------------------- */
+
+/* Empty / placeholder states: tinted panel, larger emoji, centered copy. */
+.card .card-body.text-center.py-5 {
+  background: linear-gradient(180deg, #fbfcf9, #f4f6f1);
+  border-radius: calc(var(--bs-card-border-radius) - 2px);
+}
+.card .card-body.text-center.py-5 .fs-4 {
+  font-size: 2.6rem !important; /* beats Bootstrap's .fs-4 utility (!important) */
+}
+.card .card-body.text-center.py-5 .card-title {
+  font-size: 1.2rem;
+}
+.card .card-body.text-center.py-5 .card-text {
+  max-width: 380px;
+  margin-inline: auto;
+}
+
+/* Search toolbar (admin tables). */
+.input-group-text {
+  background: #f2f4ef;
+  border-color: #d5dcd2;
+  color: var(--dc-teal-700);
+}
+
+.form-control::placeholder {
+  color: #9aa69f;
+  opacity: 1;
+}
+
+/* Wage chip on worker job cards. */
+.chip-wage {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  background: var(--dc-teal-100);
+  color: var(--dc-teal-900);
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-family: 'Fraunces', Georgia, serif;
+}
+.chip-wage-day {
+  color: var(--dc-teal-700);
+  font-weight: 600;
+  font-size: 0.8rem;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+ * Worker Dashboard refactor — Inter typeface + sans-serif numbers/headings,
+ * scoped to the worker dashboard so the rest of the app keeps the serif
+ * display face. Bootstrap's text-* utilities still win via specificity.
+ * ------------------------------------------------------------------------- */
+.worker-dash {
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+.worker-dash :where(h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6) {
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+.worker-dash .stat-card .fs-4.fw-bold {
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+.worker-dash .stat-card .text-uppercase {
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  letter-spacing: 0.04em;
+}
+.worker-dash .chip-wage,
+.worker-dash .chip-wage-day {
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+.worker-dash .stat-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.worker-dash .stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+  border-color: rgba(27, 122, 128, 0.45) !important;
+}
+
+/* Light-teal text for the worker welcome banner subtext (contrast fix). */
+.worker-dash .text-teal-50 {
+  color: rgba(220, 234, 232, 0.92) !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Existing custom component styles (kept from before the redesign)
  * ------------------------------------------------------------------------- */
 
 /* StatCard hover-lift (dashboard overviews). */
@@ -11,6 +770,66 @@
 .stat-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+}
+
+/* StatCard icon chip — tinted pill matching the card's accent. */
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.stat-icon-primary {
+  background: var(--dc-teal-100);
+  color: var(--dc-teal-700);
+}
+.stat-icon-success {
+  background: #e1efe7;
+  color: #1f5c3e;
+}
+.stat-icon-warning {
+  background: var(--dc-marigold-100);
+  color: var(--dc-marigold-600);
+}
+.stat-icon-danger {
+  background: #fbe4e2;
+  color: #8f2f28;
+}
+.stat-icon-info {
+  background: #dceae8;
+  color: var(--dc-teal-700);
+}
+.stat-icon-secondary {
+  background: #eef1ec;
+  color: #4b5a54;
+}
+
+[data-bs-theme='dark'] .stat-icon-primary {
+  background: #1b3033;
+  color: #7ec9cf;
+}
+[data-bs-theme='dark'] .stat-icon-success {
+  background: #173526;
+  color: #6cc795;
+}
+[data-bs-theme='dark'] .stat-icon-warning {
+  background: #33270f;
+  color: #f5b654;
+}
+[data-bs-theme='dark'] .stat-icon-danger {
+  background: #3a1d1b;
+  color: #ef9a93;
+}
+[data-bs-theme='dark'] .stat-icon-info {
+  background: #1b3033;
+  color: #7ec9cf;
+}
+[data-bs-theme='dark'] .stat-icon-secondary {
+  background: #1d2623;
+  color: #b9c6c0;
 }
 
 /* Toast slide-in animation (ToastStack). */
@@ -47,11 +866,17 @@
 /* Respect users who prefer reduced motion (WCAG 2.3.3). */
 @media (prefers-reduced-motion: reduce) {
   .stat-card,
-  .job-card {
+  .job-card,
+  .btn-primary,
+  .btn-success,
+  .btn-danger {
     transition: none;
   }
   .stat-card:hover,
-  .job-card:hover {
+  .job-card:hover,
+  .btn-primary:hover,
+  .btn-success:hover,
+  .btn-danger:hover {
     transform: none;
   }
   .toast-enter {

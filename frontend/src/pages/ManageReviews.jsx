@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Star, MessageSquareText } from 'lucide-react';
 import axiosInstance from '../api/axiosInstance';
 import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../utils/jobFormat';
@@ -41,11 +42,16 @@ export default function ManageReviews() {
 
   const role = currentUser?.role;
   const isAdmin = role === 'ADMIN';
+  const isEmployer = role === 'EMPLOYER';
   const submitReviewPath = isAdmin ? '/admin/reviews/new' : '/employer/reviews/new';
 
   const [workers, setWorkers] = useState([]);
   const [workersLoading, setWorkersLoading] = useState(true);
   const [workersError, setWorkersError] = useState('');
+
+  const [jobs, setJobs] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [jobsError, setJobsError] = useState('');
 
   const [selectedWorkerId, setSelectedWorkerId] = useState('');
   const [report, setReport] = useState(null);
@@ -87,16 +93,61 @@ export default function ManageReviews() {
     }
   }, []);
 
+  // ------------------------------------------------------------------
+  // Job pool (GET /api/jobs) — employers only, to determine which workers
+  // they have hired. Admins manage the full worker directory instead.
+  // ------------------------------------------------------------------
+  const loadJobs = useCallback(async (signal) => {
+    setJobsLoading(true);
+    setJobsError('');
+    try {
+      const { data } = await axiosInstance.get('/api/jobs', { signal });
+      setJobs(Array.isArray(data) ? data : []);
+    } catch (err) {
+      if (err?.code !== 'ERR_CANCELED') {
+        setJobsError(
+          err.response?.data?.message || 'Unable to load jobs. Please try again.'
+        );
+      }
+    } finally {
+      setJobsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!currentUser?.id) {
       setWorkersLoading(false);
+      setJobsLoading(false);
       return undefined;
     }
 
     const controller = new AbortController();
     loadWorkers(controller.signal);
+    if (isEmployer) {
+      loadJobs(controller.signal);
+    } else {
+      setJobsLoading(false);
+    }
     return () => controller.abort();
-  }, [currentUser?.id, loadWorkers]);
+  }, [currentUser?.id, isEmployer, loadWorkers, loadJobs]);
+
+  // Employers may only manage reviews for workers they have actually hired —
+  // the picker is narrowed to the assignees of the employer's ASSIGNED job
+  // posts. Admins see the full worker directory.
+  const visibleWorkers = useMemo(() => {
+    if (!isEmployer) return workers;
+    const assigned = new Set();
+    jobs.forEach((job) => {
+      if (
+        job.status === 'ASSIGNED' &&
+        String(job.employerId) === String(currentUser?.id) &&
+        job.workerId != null
+      ) {
+        assigned.add(String(job.workerId));
+      }
+    });
+    return workers.filter((w) => assigned.has(String(w.id)));
+  }, [isEmployer, currentUser?.id, jobs, workers]);
 
   // ------------------------------------------------------------------
   // Performance report for the selected worker
@@ -254,19 +305,31 @@ export default function ManageReviews() {
               <label htmlFor="reviews-worker" className="form-label">
                 Worker
               </label>
-              {workersLoading ? (
+              {workersLoading || (isEmployer && jobsLoading) ? (
                 <div className="text-muted small py-2">Loading workers…</div>
-              ) : workersError ? (
+              ) : workersError || (isEmployer && jobsError) ? (
                 <div className="alert alert-danger py-2 mb-0" role="alert">
-                  <p className="mb-2">{workersError}</p>
+                  <p className="mb-2">{workersError || jobsError}</p>
                   <button
                     type="button"
                     className="btn btn-outline-danger btn-sm"
-                    onClick={() => loadWorkers()}
+                    onClick={() => {
+                      loadWorkers();
+                      if (isEmployer) loadJobs();
+                    }}
                   >
                     Try again
                   </button>
                 </div>
+              ) : visibleWorkers.length === 0 ? (
+                isEmployer ? (
+                  <div className="text-muted small py-2">
+                    No assigned workers yet — assign a worker to one of your
+                    job posts to start managing reviews.
+                  </div>
+                ) : (
+                  <p className="text-muted small mb-0">No workers found.</p>
+                )
               ) : (
                 <select
                   id="reviews-worker"
@@ -275,7 +338,7 @@ export default function ManageReviews() {
                   onChange={(e) => setSelectedWorkerId(e.target.value)}
                 >
                   <option value="">Select a worker…</option>
-                  {workers.map((worker) => (
+                  {visibleWorkers.map((worker) => (
                     <option key={worker.id} value={worker.id}>
                       {worker.name} ({worker.email})
                     </option>
@@ -335,7 +398,7 @@ export default function ManageReviews() {
           {/* Headline stats */}
           <div className="row g-3 mb-4">
             <StatCard
-              emoji="⭐"
+              icon={Star}
               label="Average rating"
               value={
                 report.averageRating == null ? (
@@ -355,7 +418,7 @@ export default function ManageReviews() {
               accent="warning"
             />
             <StatCard
-              emoji="📝"
+              icon={MessageSquareText}
               label="Total reviews"
               value={report.reviewCount}
               note={`For ${selectedWorker?.name ?? 'this worker'}`}

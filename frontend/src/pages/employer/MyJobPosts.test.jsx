@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
@@ -65,6 +65,42 @@ const WORKERS = [
   },
 ];
 
+// Worker performance report returned for each worker id (profile review data).
+const REPORTS = {
+  11: {
+    workerId: 11,
+    reviewCount: 2,
+    averageRating: 4.5,
+    ratingDistribution: [
+      { rating: 5, count: 1 },
+      { rating: 4, count: 1 },
+      { rating: 3, count: 0 },
+      { rating: 2, count: 0 },
+      { rating: 1, count: 0 },
+    ],
+    reviews: [
+      { id: 1, rating: 5, remarks: 'Excellent', reviewedBy: 'Mark', jobId: 3, createdAt: '2026-08-01T10:00:00Z' },
+    ],
+    page: 0,
+    size: 10,
+    totalPages: 1,
+    totalElements: 2,
+  },
+  12: { workerId: 12, reviewCount: 0, averageRating: null, reviews: [], ratingDistribution: [] },
+};
+
+// One pending application from Ana to the open Household Helper job (id 1).
+const APPLICATIONS = [
+  {
+    id: 21,
+    jobId: 1,
+    jobTitle: 'Household Helper',
+    workerId: 11,
+    status: 'PENDING',
+    createdAt: '2026-08-05T10:00:00Z',
+  },
+];
+
 function EditStub() {
   const { id } = useParams();
   return <div>Edit Job {id}</div>;
@@ -96,10 +132,38 @@ describe('MyJobPosts', () => {
     axiosInstance.post.mockReset();
     axiosInstance.delete.mockReset();
     // Per-URL mock: /api/jobs returns the job list, /api/auth/workers returns
-    // the worker pool (wrapped in the auth-service ApiResponse envelope).
+    // the worker pool (wrapped in the auth-service ApiResponse envelope), and
+    // /api/performance/worker/{id} returns that worker's profile report.
     axiosInstance.get.mockImplementation((url) => {
       if (url === '/api/auth/workers') {
         return Promise.resolve({ data: { data: WORKERS } });
+      }
+      if (url.includes('/applications')) {
+        return Promise.resolve({ data: APPLICATIONS });
+      }
+      const perfMatch = url.match(/\/api\/performance\/worker\/(\d+)/);
+      if (perfMatch) {
+        return Promise.resolve({ data: REPORTS[perfMatch[1]] ?? null });
+      }
+      return Promise.resolve({ data: JOBS });
+    });
+    axiosInstance.post.mockReset();
+  });
+
+  afterEach(() => {
+    // Some tests override the default mockImplementation (e.g. the spinner
+    // test); restore the shared per-URL mock so later tests aren't affected.
+    axiosInstance.get.mockReset();
+    axiosInstance.get.mockImplementation((url) => {
+      if (url === '/api/auth/workers') {
+        return Promise.resolve({ data: { data: WORKERS } });
+      }
+      if (url.includes('/applications')) {
+        return Promise.resolve({ data: APPLICATIONS });
+      }
+      const perfMatch = url.match(/\/api\/performance\/worker\/(\d+)/);
+      if (perfMatch) {
+        return Promise.resolve({ data: REPORTS[perfMatch[1]] ?? null });
       }
       return Promise.resolve({ data: JOBS });
     });
@@ -288,7 +352,7 @@ describe('MyJobPosts', () => {
       expect(await within(modal).findByLabelText('Worker')).toBeInTheDocument();
     });
 
-    it('assigns a selected worker and marks the job ASSIGNED', async () => {
+    it('shows the worker profile and requires review confirmation before assigning', async () => {
       const user = userEvent.setup();
       axiosInstance.post.mockResolvedValue({ data: { id: 1, status: 'ASSIGNED' } });
       renderMyJobs();
@@ -298,9 +362,24 @@ describe('MyJobPosts', () => {
 
       const modal = await screen.findByRole('dialog');
       await user.selectOptions(await within(modal).findByLabelText('Worker'), '11');
+
+      // The worker's profile (rating + reviews) is shown for review.
+      expect(await within(modal).findByText(/4\.5/)).toBeInTheDocument();
+      expect(within(modal).getByText(/2 reviews/)).toBeInTheDocument();
+      expect(within(modal).getByText('“Excellent”')).toBeInTheDocument();
+
+      // Assign stays gated until the employer confirms the review.
+      const confirm = within(modal).getByRole('button', { name: /review profile to assign/i });
+      expect(confirm).toBeDisabled();
+      await user.click(
+        within(modal).getByRole('checkbox', { name: /i have reviewed this worker/i })
+      );
+      expect(within(modal).getByRole('button', { name: /assign worker/i })).toBeEnabled();
+
       await user.click(within(modal).getByRole('button', { name: /assign worker/i }));
 
-      expect(axiosInstance.post).toHaveBeenCalledWith('/api/jobs/1/assign/11');
+      // Assignment goes through the reviewed endpoint (profile gate).
+      expect(axiosInstance.post).toHaveBeenCalledWith('/api/jobs/1/assign/11/reviewed');
       expect(
         await screen.findByText(/Worker assigned to "Household Helper"/)
       ).toBeInTheDocument();
@@ -312,7 +391,7 @@ describe('MyJobPosts', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('keeps the confirm button disabled until a worker is chosen', async () => {
+    it('keeps the confirm button disabled until a worker is chosen AND the profile is reviewed', async () => {
       const user = userEvent.setup();
       renderMyJobs();
 
@@ -320,11 +399,21 @@ describe('MyJobPosts', () => {
       await user.click(within(row).getByRole('button', { name: /assign/i }));
 
       const modal = await screen.findByRole('dialog');
-      const confirm = within(modal).getByRole('button', { name: /assign worker/i });
+
+      // No worker chosen yet.
+      const confirm = within(modal).getByRole('button', { name: /review profile to assign/i });
       expect(confirm).toBeDisabled();
 
+      // Worker chosen — profile shown — but review not confirmed yet.
       await user.selectOptions(await within(modal).findByLabelText('Worker'), '12');
-      expect(confirm).toBeEnabled();
+      await within(modal).findByText(/0 reviews/);
+      expect(within(modal).getByRole('button', { name: /review profile to assign/i })).toBeDisabled();
+
+      // Confirming the review unlocks the assign action.
+      await user.click(
+        within(modal).getByRole('checkbox', { name: /i have reviewed this worker/i })
+      );
+      expect(within(modal).getByRole('button', { name: /assign worker/i })).toBeEnabled();
     });
 
     it('does not assign when the modal is cancelled', async () => {
@@ -342,6 +431,53 @@ describe('MyJobPosts', () => {
       expect(within(row).getByRole('button', { name: /^assign$/i })).toBeInTheDocument();
     });
 
+    it('lists applicants and accepts one after reviewing the profile', async () => {
+      const user = userEvent.setup();
+      axiosInstance.post.mockResolvedValue({ data: { id: 1, status: 'ASSIGNED', profileReviewed: true } });
+      renderMyJobs();
+
+      const row = await findRowFor('Household Helper');
+      await user.click(within(row).getByRole('button', { name: /applicants/i }));
+
+      const modal = await screen.findByRole('dialog');
+      expect(await within(modal).findByText('Ana')).toBeInTheDocument();
+      expect(within(modal).getByText(/Applied 05 Aug 2026/)).toBeInTheDocument();
+
+      // Review the applicant's profile, then accept.
+      await user.click(within(modal).getByRole('button', { name: /review & accept/i }));
+      expect(await within(modal).findByText(/4\.5/)).toBeInTheDocument();
+      expect(within(modal).getByText(/2 reviews/)).toBeInTheDocument();
+
+      const accept = within(modal).getByRole('button', { name: /review profile to accept/i });
+      expect(accept).toBeDisabled();
+      await user.click(
+        within(modal).getByRole('checkbox', { name: /i have reviewed this worker/i })
+      );
+      await user.click(within(modal).getByRole('button', { name: /accept & assign worker/i }));
+
+      expect(axiosInstance.post).toHaveBeenCalledWith('/api/jobs/1/applications/21/accept');
+      expect(await screen.findByText(/Application accepted/)).toBeInTheDocument();
+      expect(within(row).getByText('Assigned')).toBeInTheDocument();
+    });
+
+    it('declines an applicant and leaves the job open', async () => {
+      const user = userEvent.setup();
+      axiosInstance.post.mockResolvedValue({ data: { id: 21, status: 'DECLINED' } });
+      renderMyJobs();
+
+      const row = await findRowFor('Household Helper');
+      await user.click(within(row).getByRole('button', { name: /applicants/i }));
+
+      const modal = await screen.findByRole('dialog');
+      await within(modal).findByText('Ana');
+      await user.click(within(modal).getByRole('button', { name: /^decline$/i }));
+
+      expect(axiosInstance.post).toHaveBeenCalledWith('/api/jobs/1/applications/21/decline');
+      expect(await within(modal).findByText('DECLINED')).toBeInTheDocument();
+      // The job row stays OPEN — declining doesn't assign.
+      expect(within(row).getByRole('button', { name: /^assign$/i })).toBeInTheDocument();
+    });
+
     it('keeps the modal open and shows an error toast when assignment fails', async () => {
       const user = userEvent.setup();
       axiosInstance.post.mockRejectedValue({
@@ -356,6 +492,10 @@ describe('MyJobPosts', () => {
 
       const modal = await screen.findByRole('dialog');
       await user.selectOptions(await within(modal).findByLabelText('Worker'), '11');
+      await within(modal).findByText(/4\.5/);
+      await user.click(
+        within(modal).getByRole('checkbox', { name: /i have reviewed this worker/i })
+      );
       await user.click(within(modal).getByRole('button', { name: /assign worker/i }));
 
       expect(

@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { ROLE_HOME } from '../constants/roles';
 import { NAV_LINKS } from '../constants/navLinks';
 import useUnreadNotifications from '../hooks/useUnreadNotifications';
+import ThemeToggle from './ThemeToggle';
+import Logo from './Logo';
 
 /**
  * Shared navbar for the signed-in area. Renders the navigation links for the
@@ -47,6 +49,7 @@ export default function Navbar({ accent }) {
     <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
       <div className="container-fluid px-4">
         <Link className="navbar-brand fw-bold" to={homePath}>
+          <Logo variant="dot" size={9} />
           Domestic Connects
         </Link>
 
@@ -109,14 +112,21 @@ export default function Navbar({ accent }) {
               </li>
             )}
             <li className="nav-item">
-              <span className="navbar-text text-white-50 d-none d-md-inline">
-                Welcome, <strong className="text-white">{currentUser?.name}</strong>
+              <ThemeToggle />
+            </li>
+            <li className="nav-item">
+              <span
+                className="navbar-text text-white-50 d-none d-md-inline text-nowrap"
+                style={{ minWidth: 0, maxWidth: '14rem', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                Welcome,{' '}
+                <strong className="text-white">{currentUser?.name}</strong>
               </span>
             </li>
             <li className="nav-item">
               <button
                 type="button"
-                className="btn btn-outline-light btn-sm"
+                className="btn btn-outline-light btn-sm text-nowrap"
                 onClick={handleLogout}
               >
                 Log out

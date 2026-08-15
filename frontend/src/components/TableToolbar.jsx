@@ -1,3 +1,5 @@
+import { Search } from 'lucide-react';
+
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 /**
@@ -23,7 +25,7 @@ export default function TableToolbar({
     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
       <div className="input-group input-group-sm" style={{ maxWidth: 300 }}>
         <span className="input-group-text" aria-hidden="true">
-          🔍
+          <Search size={15} strokeWidth={2.4} />
         </span>
         <input
           type="search"

@@ -54,6 +54,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Spring Cloud: OpenFeign for service-to-service calls resolved via Eureka -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
         <!-- Spring Cloud: Config Client & Eureka Client -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

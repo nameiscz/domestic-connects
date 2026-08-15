@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import { useAuth } from '../../context/AuthContext';
 import { formatWage } from '../../utils/jobFormat';
@@ -76,12 +76,6 @@ export default function MarkAttendance() {
     }
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    loadWorkers(controller.signal);
-    return () => controller.abort();
-  }, [loadWorkers]);
-
   const selectedWorker =
     workers.find((w) => String(w.id) === String(selectedWorkerId)) || null;
 
@@ -146,12 +140,30 @@ export default function MarkAttendance() {
     }
   }, [employerId]);
 
+  // Load the worker pool and the employer's ASSIGNED jobs together on mount.
+  // Attendance is scoped to workers the employer has actually hired, so the
+  // worker picker is filtered to those assignees (see assignedWorkers below).
   useEffect(() => {
-    if (!markOpen) return undefined;
     const controller = new AbortController();
+    loadWorkers(controller.signal);
     loadJobs(controller.signal);
     return () => controller.abort();
-  }, [markOpen, loadJobs]);
+  }, [loadWorkers, loadJobs]);
+
+  // Workers with an ASSIGNED job from this employer — the only workers the
+  // employer may view and mark attendance for.
+  const assignedWorkerIds = useMemo(() => {
+    const ids = new Set();
+    jobs.forEach((job) => {
+      if (job.workerId != null) ids.add(String(job.workerId));
+    });
+    return ids;
+  }, [jobs]);
+
+  const assignedWorkers = useMemo(
+    () => workers.filter((w) => assignedWorkerIds.has(String(w.id))),
+    [workers, assignedWorkerIds]
+  );
 
   // Once jobs load, hand focus to the picker.
   useEffect(() => {
@@ -236,18 +248,26 @@ export default function MarkAttendance() {
               <label htmlFor="attendance-worker" className="form-label">
                 Worker
               </label>
-              {workersLoading ? (
+              {workersLoading || jobsLoading ? (
                 <div className="text-muted small py-2">Loading workers…</div>
-              ) : workersError ? (
+              ) : workersError || jobsError ? (
                 <div className="alert alert-danger py-2 mb-0" role="alert">
-                  <p className="mb-2">{workersError}</p>
+                  <p className="mb-2">{workersError || jobsError}</p>
                   <button
                     type="button"
                     className="btn btn-outline-danger btn-sm"
-                    onClick={() => loadWorkers()}
+                    onClick={() => {
+                      loadWorkers();
+                      loadJobs();
+                    }}
                   >
                     Try again
                   </button>
+                </div>
+              ) : assignedWorkers.length === 0 ? (
+                <div className="text-muted small py-2">
+                  No assigned workers yet — assign a worker to one of your job
+                  posts to start marking attendance.
                 </div>
               ) : (
                 <select
@@ -257,7 +277,7 @@ export default function MarkAttendance() {
                   onChange={(e) => setSelectedWorkerId(e.target.value)}
                 >
                   <option value="">Select a worker…</option>
-                  {workers.map((worker) => (
+                  {assignedWorkers.map((worker) => (
                     <option key={worker.id} value={worker.id}>
                       {worker.name} ({worker.email})
                     </option>

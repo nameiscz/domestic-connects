@@ -21,6 +21,11 @@ public class JobPostResponse {
     private Long employerId;
     /** Worker assigned to the post, or {@code null} while it is still OPEN. */
     private Long workerId;
+    /**
+     * Whether the employer reviewed the worker's profile before assigning
+     * ({@code false} while the post is OPEN or self-assigned by a worker).
+     */
+    private boolean profileReviewed;
     private BigDecimal wagePerDay;
     private String location;
     private JobStatus status;
