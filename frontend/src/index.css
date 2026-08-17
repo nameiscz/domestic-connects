@@ -1,4 +1,63 @@
 /* ---------------------------------------------------------------------------
+ * Tailwind — design-token utilities for the migrated TypeScript UI.
+ * `base` emits nothing because preflight is disabled in tailwind.config.ts
+ * (Bootstrap pages still live alongside during the incremental migration);
+ * global base styles live in the "Global base" block below.
+ * ------------------------------------------------------------------------- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+ * Global base — new (Tailwind-era) app chrome.
+ * ------------------------------------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--dc-bg, #f5f6f2);
+  color: var(--dc-ink, #14231f);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The migrated UI styles links as surfaces (nav pills, buttons, cards), so
+   drop Bootstrap's default `a { text-decoration: underline }` — it makes nav
+   and brand names render underlined. Inline prose links can opt back in with
+   the `underline` utility. */
+a {
+  text-decoration: none;
+}
+
+/* Visible, marigold keyboard-focus ring on every interactive element. */
+:focus-visible {
+  outline: 2px solid var(--dc-marigold-500, #f2a93b);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: rgba(242, 169, 59, 0.45);
+}
+
+/* Respect users who prefer reduced motion (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
  * Domestic Connects design system.
  *
  * The app is built on Bootstrap 5.3 utility classes (card, btn, bg-primary…),
@@ -16,18 +75,31 @@
 :root,
 [data-bs-theme='light'] {
   /* Palette (shared with the marketing landing page) */
+  --dc-teal-950: #05282c;
   --dc-teal-900: #0a3b3f;
+  --dc-teal-800: #0d484d;
   --dc-teal-700: #0f5257;
+  --dc-teal-600: #14666c;
   --dc-teal-500: #1b7a80;
+  --dc-teal-400: #2f9aa1;
+  --dc-teal-300: #7bbbc0;
+  --dc-teal-200: #b7d6d4;
   --dc-teal-100: #dceae8;
-  --dc-marigold-500: #f2a93b;
+  --dc-teal-50: #f0f6f5;
+  --dc-marigold-700: #b87616;
   --dc-marigold-600: #d98f1f;
+  --dc-marigold-500: #f2a93b;
+  --dc-marigold-400: #f5bc5f;
+  --dc-marigold-300: #fad593;
   --dc-marigold-100: #fdecc8;
-  --dc-bg: #f2f4ef;
+  --dc-marigold-50: #fef6e4;
+  --dc-bg: #f5f6f2;
   --dc-card: #ffffff;
   --dc-ink: #14231f;
-  --dc-ink-soft: #4b5a54;
+  --dc-ink-soft: #51605a;
+  --dc-ink-mute: #7c8b84;
   --dc-border: #dee3da;
+  --dc-border-soft: #e9ece5;
   /* Semantic: heading text + deep brand surfaces (adapt per theme) */
   --dc-heading: #0a3b3f;
   --dc-deep: #0a3b3f;
@@ -35,8 +107,8 @@
   /* Bootstrap theme mapping */
   --bs-primary: #0f5257;
   --bs-primary-rgb: 15, 82, 87;
-  --bs-secondary: #4b5a54;
-  --bs-secondary-rgb: 75, 90, 84;
+  --bs-secondary: #51605a;
+  --bs-secondary-rgb: 81, 96, 90;
   --bs-success: #2f7a55;
   --bs-success-rgb: 47, 122, 85;
   --bs-info: #1b7a80;
@@ -45,31 +117,39 @@
   --bs-warning-rgb: 242, 169, 59;
   --bs-danger: #c4453c;
   --bs-danger-rgb: 196, 69, 60;
-  --bs-light: #f2f4ef;
-  --bs-light-rgb: 242, 244, 239;
+  --bs-light: #f5f6f2;
+  --bs-light-rgb: 245, 246, 242;
   --bs-dark: #0a3b3f;
   --bs-dark-rgb: 10, 59, 63;
 
   --bs-body-color: #14231f;
   --bs-body-color-rgb: 20, 35, 31;
-  --bs-body-bg: #f7f8f4;
+  --bs-body-bg: #f5f6f2;
   --bs-border-color: #dee3da;
   --bs-border-color-translucent: rgba(222, 227, 218, 0.55);
 
   --bs-link-color: #0f5257;
   --bs-link-hover-color: #0a3b3f;
-  --bs-focus-ring-color: rgba(15, 82, 87, 0.25);
+  --bs-focus-ring-color: rgba(15, 82, 87, 0.22);
   --bs-focus-ring-width: 0.2rem;
 
-  --bs-border-radius: 0.625rem;
-  --bs-border-radius-sm: 0.45rem;
+  --bs-border-radius: 0.65rem;
+  --bs-border-radius-sm: 0.5rem;
   --bs-border-radius-lg: 1rem;
   --bs-border-radius-xl: 1.25rem;
+  --bs-border-radius-2xl: 1.5rem;
   --bs-border-radius-pill: 50rem;
   --bs-badge-border-radius: 999px;
 
   --bs-body-font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI',
     Roboto, sans-serif;
+
+  /* Premium layered shadow used by cards and floating surfaces. */
+  --dc-shadow-card: 0 1px 2px rgba(16, 24, 23, 0.04), 0 8px 24px rgba(16, 24, 23, 0.05);
+  --dc-shadow-hover: 0 2px 4px rgba(16, 24, 23, 0.05), 0 16px 40px rgba(16, 24, 23, 0.1);
+  --dc-shadow-lift: 0 4px 8px rgba(10, 59, 63, 0.08), 0 12px 32px rgba(10, 59, 63, 0.16);
+  --dc-shadow-glow: 0 8px 20px rgba(15, 82, 87, 0.28);
+  --dc-ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Alert emphasis pairs (subtle backgrounds + readable text) */
   --bs-primary-bg-subtle: #dceae8;
@@ -92,16 +172,23 @@
  * brand mapping and custom component colors on top of it.
  * ------------------------------------------------------------------------- */
 [data-bs-theme='dark'] {
-  --dc-bg: #0d1513;
-  --dc-card: #141d1a;
+  --dc-bg: #0d1412;
+  --dc-card: #141c19;
   --dc-ink: #e6ece9;
   --dc-ink-soft: #93a39c;
+  --dc-ink-mute: #66756e;
   --dc-border: #27332e;
+  --dc-border-soft: #1c2622;
   --dc-teal-100: #1b3033;
+  --dc-teal-200: #244047;
+  --dc-teal-400: #4fabb2;
   --dc-teal-500: #3fa4ab;
+  --dc-teal-600: #2f8a91;
   --dc-teal-700: #2f8a91;
   --dc-teal-900: #0a3b3f;
   --dc-marigold-100: #33270f;
+  --dc-marigold-300: #d9a14d;
+  --dc-marigold-400: #e8b45f;
   --dc-marigold-500: #f2a93b;
   --dc-marigold-600: #f5b654;
   --dc-heading: #e9efec;
@@ -119,20 +206,25 @@
   --bs-warning-rgb: 245, 182, 84;
   --bs-danger: #d96a60;
   --bs-danger-rgb: 217, 106, 96;
-  --bs-light: #141d1a;
-  --bs-light-rgb: 20, 29, 26;
-  --bs-dark: #0d1513;
-  --bs-dark-rgb: 13, 21, 19;
+  --bs-light: #141c19;
+  --bs-light-rgb: 20, 28, 25;
+  --bs-dark: #0d1412;
+  --bs-dark-rgb: 13, 20, 18;
 
   --bs-body-color: #e6ece9;
   --bs-body-color-rgb: 230, 236, 233;
-  --bs-body-bg: #0d1513;
+  --bs-body-bg: #0d1412;
   --bs-border-color: #27332e;
   --bs-border-color-translucent: rgba(39, 51, 46, 0.55);
 
   --bs-link-color: #5bb5bc;
   --bs-link-hover-color: #7ec9cf;
   --bs-focus-ring-color: rgba(63, 164, 171, 0.35);
+
+  --dc-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --dc-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.45), 0 16px 40px rgba(0, 0, 0, 0.45);
+  --dc-shadow-lift: 0 4px 8px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.5);
+  --dc-shadow-glow: 0 8px 20px rgba(47, 138, 145, 0.35);
 
   --bs-primary-bg-subtle: #1b3033;
   --bs-primary-text-emphasis: #7ec9cf;
@@ -282,7 +374,7 @@
   border-color: #33413c;
 }
 [data-bs-theme='dark'] .card .card-body.text-center.py-5 {
-  background: linear-gradient(180deg, #141d1a, #0f1714);
+  background: linear-gradient(180deg, #141c19, #0f1714);
 }
 [data-bs-theme='dark'] .chip-wage {
   background: #1b3033;
@@ -301,6 +393,17 @@
   color: var(--dc-ink) !important;
 }
 
+/* Navbar profile chip — Bootstrap's global `button { background:
+   var(--bs-secondary-bg) }` paints plain buttons gray, which would bury the
+   white username on the dark navbar in light mode. Keep the chip glassy. */
+nav .navbar-profile-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+nav .navbar-profile-chip:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 /* --- Theme toggle button --- */
 .theme-toggle {
   display: inline-flex;
@@ -313,8 +416,11 @@
   background: transparent;
   color: inherit;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s var(--dc-ease-premium);
   flex-shrink: 0;
+}
+.theme-toggle:hover {
+  transform: translateY(-1px);
 }
 .navbar .theme-toggle {
   color: rgba(255, 255, 255, 0.85);
@@ -331,7 +437,7 @@
  * ------------------------------------------------------------------------- */
 :where(h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6) {
   font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   font-weight: 600;
 }
 
@@ -348,20 +454,30 @@ body {
  * Buttons — Bootstrap bakes component colors at build time, so override the
  * --bs-btn-* custom properties (which the compiled CSS reads) per variant.
  * ------------------------------------------------------------------------- */
+.btn {
+  --bs-btn-border-radius: 0.65rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  transition: transform 0.15s var(--dc-ease-premium), box-shadow 0.2s var(--dc-ease-premium),
+    background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
 .btn-primary {
   --bs-btn-color: #fff;
   --bs-btn-bg: #0f5257;
   --bs-btn-border-color: #0f5257;
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #0a3b3f;
-  --bs-btn-hover-border-color: #0a3b3f;
+  --bs-btn-hover-bg: #0d484d;
+  --bs-btn-hover-border-color: #0d484d;
   --bs-btn-focus-shadow-rgb: 15, 82, 87;
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #093438;
-  --bs-btn-active-border-color: #093438;
+  --bs-btn-active-bg: #0a3b3f;
+  --bs-btn-active-border-color: #0a3b3f;
   --bs-btn-disabled-color: #fff;
   --bs-btn-disabled-bg: #0f5257;
   --bs-btn-disabled-border-color: #0f5257;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 45%);
+  box-shadow: var(--dc-shadow-glow);
 }
 
 .btn-success {
@@ -378,6 +494,7 @@ body {
   --bs-btn-disabled-color: #fff;
   --bs-btn-disabled-bg: #2f7a55;
   --bs-btn-disabled-border-color: #2f7a55;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 45%);
 }
 
 .btn-danger {
@@ -394,6 +511,7 @@ body {
   --bs-btn-disabled-color: #fff;
   --bs-btn-disabled-bg: #c4453c;
   --bs-btn-disabled-border-color: #c4453c;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 45%);
 }
 
 .btn-outline-primary {
@@ -439,30 +557,33 @@ body {
 }
 
 .btn-outline-secondary {
-  --bs-btn-color: #4b5a54;
+  --bs-btn-color: #51605a;
   --bs-btn-border-color: #9aa69f;
   --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: #4b5a54;
-  --bs-btn-hover-border-color: #4b5a54;
-  --bs-btn-focus-shadow-rgb: 75, 90, 84;
+  --bs-btn-hover-bg: #51605a;
+  --bs-btn-hover-border-color: #51605a;
+  --bs-btn-focus-shadow-rgb: 81, 96, 90;
   --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: #4b5a54;
-  --bs-btn-active-border-color: #4b5a54;
-  --bs-btn-disabled-color: #4b5a54;
+  --bs-btn-active-bg: #51605a;
+  --bs-btn-active-border-color: #51605a;
+  --bs-btn-disabled-color: #51605a;
   --bs-btn-disabled-border-color: #9aa69f;
 }
 
-/* Soft hover lift on primary actions (matches the marketing page). */
+/* Premium hover lift + soft glow on primary actions. */
 .btn-primary,
 .btn-success,
 .btn-danger {
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  box-shadow: var(--dc-shadow-glow);
 }
 .btn-primary:hover,
 .btn-success:hover,
 .btn-danger:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(10, 59, 63, 0.18);
+  box-shadow: var(--dc-shadow-lift);
+}
+.btn:active {
+  transform: translateY(0);
 }
 
 /* ---------------------------------------------------------------------------
@@ -470,13 +591,17 @@ body {
  * ------------------------------------------------------------------------- */
 .navbar {
   --bs-navbar-padding-y: 0.7rem;
+  background: linear-gradient(180deg, rgba(10, 59, 63, 0.97), rgba(10, 59, 63, 0.92));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 8px 24px rgba(10, 59, 63, 0.12);
 }
 
 .navbar-brand {
   font-family: 'Fraunces', Georgia, serif;
   font-size: 1.3rem;
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -507,26 +632,31 @@ body {
  * Cards, forms, tables, badges, misc
  * ------------------------------------------------------------------------- */
 .card {
-  --bs-card-border-radius: 1rem;
+  --bs-card-border-radius: 1.1rem;
   --bs-card-border-color: var(--dc-border);
   --bs-card-spacer-y: 1.25rem;
   --bs-card-spacer-x: 1.25rem;
+  border: 1px solid var(--dc-border);
+  box-shadow: var(--dc-shadow-card);
 }
 
 .card-header {
   border-bottom-color: var(--dc-border);
+  background: linear-gradient(180deg, rgba(15, 82, 87, 0.03), rgba(15, 82, 87, 0));
 }
 
 .form-control,
 .form-select {
   border-color: #d5dcd2;
   padding-block: 0.55rem;
+  border-radius: 0.65rem;
+  transition: border-color 0.15s ease, box-shadow 0.2s var(--dc-ease-premium);
 }
 
 .form-control:focus,
 .form-select:focus {
   border-color: var(--dc-teal-500);
-  box-shadow: 0 0 0 0.25rem rgba(15, 82, 87, 0.14);
+  box-shadow: 0 0 0 0.2rem rgba(15, 82, 87, 0.14);
 }
 
 .form-label {
@@ -543,10 +673,10 @@ body {
 }
 
 .table thead th {
-  font-size: 0.75rem;
-  letter-spacing: 0.05em;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--dc-ink-soft);
+  color: var(--dc-ink-mute);
   font-weight: 700;
 }
 
@@ -557,19 +687,30 @@ body {
 
 .badge {
   font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .modal-content {
   --bs-modal-border-radius: 1.1rem;
   --bs-modal-border-color: var(--dc-border);
+  box-shadow: var(--dc-shadow-hover);
+  border: 1px solid var(--dc-border);
+}
+
+.modal-backdrop.show {
+  opacity: 0.45;
+  backdrop-filter: blur(2px);
 }
 
 .toast {
   --bs-toast-border-radius: 0.8rem;
+  border: 1px solid var(--dc-border);
+  box-shadow: var(--dc-shadow-hover);
 }
 
 .alert {
   border-radius: 0.8rem;
+  border-width: 1px;
 }
 
 /* Auth pages — brand block (the Logo mark sits inside the heading) */
@@ -578,7 +719,7 @@ body {
   font-weight: 600;
   font-size: 1.75rem;
   color: var(--dc-heading);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -639,7 +780,7 @@ body {
 }
 .badge-soft-secondary {
   background: #eef1ec;
-  color: #4b5a54;
+  color: #51605a;
   border: 1px solid #dde3da;
 }
 
@@ -652,6 +793,7 @@ body {
   border-color: var(--dc-border);
   color: var(--dc-teal-700);
   font-weight: 500;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s var(--dc-ease-premium);
 }
 .pagination .page-item:first-child .page-link,
 .pagination .page-item:last-child .page-link {
@@ -661,11 +803,13 @@ body {
   background: var(--dc-teal-100);
   border-color: var(--dc-border);
   color: var(--dc-teal-900);
+  transform: translateY(-1px);
 }
 .pagination .page-item.active .page-link {
   background: var(--dc-teal-700);
   border-color: var(--dc-teal-700);
   color: #fff;
+  box-shadow: 0 4px 12px rgba(15, 82, 87, 0.28);
 }
 
 /* ---------------------------------------------------------------------------
@@ -746,11 +890,12 @@ body {
   font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 .worker-dash .stat-card {
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s var(--dc-ease-premium), box-shadow 0.2s var(--dc-ease-premium),
+    border-color 0.15s ease;
 }
 .worker-dash .stat-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+  box-shadow: var(--dc-shadow-hover) !important;
   border-color: rgba(27, 122, 128, 0.45) !important;
 }
 
@@ -759,17 +904,85 @@ body {
   color: rgba(220, 234, 232, 0.92) !important;
 }
 
+/* --- Premium hero (worker dashboard) --------------------------------------
+   Deep teal gradient with a marigold glow and a faint blueprint grid; stays
+   dark in both themes so the white text keeps its contrast. */
+/* --- Premium hero (shared by the worker and employer dashboards) --------
+   Deep teal gradient with a marigold glow and a faint blueprint grid; stays
+   dark in both themes so the white text keeps its contrast. */
+.dash-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(52rem 22rem at 88% -12%, rgba(242, 169, 59, 0.28), transparent 62%),
+    radial-gradient(40rem 20rem at -8% 112%, rgba(47, 154, 161, 0.38), transparent 58%),
+    linear-gradient(135deg, var(--dc-teal-950) 0%, var(--dc-teal-800) 55%, var(--dc-teal-700) 100%);
+  box-shadow: var(--dc-shadow-lift);
+}
+.dash-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(58rem 26rem at 72% 18%, #000, transparent 74%);
+  -webkit-mask-image: radial-gradient(58rem 26rem at 72% 18%, #000, transparent 74%);
+  pointer-events: none;
+}
+.dash-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Frosted-glass quick-metric chip inside the hero. */
+.hero-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  border-radius: 1rem;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+/* Stat cards keep the Inter face for numeric values. */
+.stat-value {
+  font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hero primary CTA — deliberately stays white in both themes (the hero
+   surface is dark either way), so `bg-white`'s dark-mode flip must not
+   apply to it. */
+.dash-hero .hero-cta {
+  background: #ffffff;
+  color: var(--dc-teal-900, #0f5257);
+  box-shadow: var(--dc-shadow-card);
+}
+.dash-hero .hero-cta:hover {
+  background: var(--dc-marigold-100, #fdecc8);
+  color: var(--dc-teal-900, #0f5257);
+}
+
 /* ---------------------------------------------------------------------------
  * Existing custom component styles (kept from before the redesign)
  * ------------------------------------------------------------------------- */
 
 /* StatCard hover-lift (dashboard overviews). */
 .stat-card {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s var(--dc-ease-premium), box-shadow 0.2s var(--dc-ease-premium),
+    border-color 0.15s ease;
 }
 .stat-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+  box-shadow: var(--dc-shadow-hover) !important;
 }
 
 /* StatCard icon chip — tinted pill matching the card's accent. */
@@ -804,7 +1017,7 @@ body {
 }
 .stat-icon-secondary {
   background: #eef1ec;
-  color: #4b5a54;
+  color: #51605a;
 }
 
 [data-bs-theme='dark'] .stat-icon-primary {
@@ -844,16 +1057,16 @@ body {
   }
 }
 .toast-enter {
-  animation: toast-in 0.25s ease-out;
+  animation: toast-in 0.3s var(--dc-ease-premium);
 }
 
 /* Job card hover-lift + 3-line clamped description (JobBrowse). */
 .job-card {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s var(--dc-ease-premium), box-shadow 0.2s var(--dc-ease-premium);
 }
 .job-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.12) !important;
+  box-shadow: var(--dc-shadow-hover) !important;
 }
 .job-description {
   display: -webkit-box;

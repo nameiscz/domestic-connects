@@ -65,7 +65,7 @@ public class AuthService {
     /**
      * Frontend origin used to build the reset link (e.g. the Vite dev server).
      */
-    @Value("${auth.frontend-base-url:http://localhost:5173}")
+    @Value("${auth.frontend-base-url:http://localhost:3000}")
     private String frontendBaseUrl;
 
     /**

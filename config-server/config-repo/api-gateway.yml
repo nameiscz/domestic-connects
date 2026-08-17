@@ -124,3 +124,13 @@ logging:
     org.springframework.cloud.gateway: INFO
     com.domesticconnects.gateway: DEBUG
     com.netflix.discovery: INFO
+
+# Actuator — expose /actuator/health and /actuator/info (docker-compose healthchecks)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized

@@ -32,7 +32,7 @@ jwt:
 
 auth:
   reset-token-expiration-minutes: 30
-  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+  frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
 
 eureka:
   instance:
@@ -48,4 +48,14 @@ eureka:
 logging:
   level:
     com.domesticconnects.auth: DEBUG
+
+# Actuator — expose /actuator/health and /actuator/info (docker-compose healthchecks)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
 

@@ -210,10 +210,10 @@ services:
       eureka-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 5
       start_period: 30s
 
   # --------------------------------------------------------------------------
@@ -234,13 +234,15 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root@123
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      # Frontend origin baked into password-reset links (auth.frontend-base-url).
+      FRONTEND_BASE_URL: http://localhost:3000
     ports:
       - "8081:8081"
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8081'"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 5
       start_period: 30s
     depends_on:
       config-server:
@@ -268,10 +270,10 @@ services:
     ports:
       - "8082:8082"
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8082'"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 5
       start_period: 30s
     depends_on:
       config-server:
@@ -301,10 +303,10 @@ services:
     ports:
       - "8083:8083"
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8083'"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 5
       start_period: 30s
     depends_on:
       config-server:
@@ -331,10 +333,10 @@ services:
     ports:
       - "8084:8084"
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8084'"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 5
       start_period: 30s
     depends_on:
       config-server:
@@ -364,10 +366,10 @@ services:
     ports:
       - "8085:8085"
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8085'"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 5
       start_period: 30s
     depends_on:
       config-server:
@@ -395,10 +397,10 @@ services:
     ports:
       - "8086:8086"
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8086'"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 5
       start_period: 30s
     depends_on:
       config-server:
@@ -424,10 +426,10 @@ services:
     ports:
       - "8087:8087"
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8087'"]
-      interval: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
+      interval: 15s
       timeout: 5s
-      retries: 10
+      retries: 5
       start_period: 30s
     depends_on:
       config-server:

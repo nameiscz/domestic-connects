@@ -77,3 +77,13 @@ logging:
   level:
     com.domesticconnects.admin: DEBUG
     com.domesticconnects.admin.client: DEBUG
+
+# Actuator — expose /actuator/health and /actuator/info (docker-compose healthchecks)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
