@@ -86,6 +86,7 @@ export default function ResetPassword() {
 
   return (
     <AuthShell
+      title="Reset your password"
       subtitle="Choose a new password for your account"
       footer={
         <>

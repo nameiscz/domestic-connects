@@ -99,7 +99,8 @@ export default function Register() {
   return (
     <AuthShell
       wide
-      subtitle="Create your account"
+      title="Create your account"
+      subtitle="Join the households and workers already on Domestic Connects."
       footer={
         <>
           Already have an account?{' '}

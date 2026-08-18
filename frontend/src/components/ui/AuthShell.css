@@ -1,0 +1,224 @@
+/* ---------------------------------------------------------------------------
+ * AuthShell — split-screen auth layout.
+ *
+ * Left: a deep-teal brand hero (marigold glow + blueprint grid) — the same
+ * art direction as the landing page hero and the dashboard .dash-hero, and it
+ * stays dark in both themes so the white text keeps its contrast. Right: the
+ * form on the page canvas. On small screens the hero collapses into a
+ * compact gradient band above the form.
+ *
+ * Every selector is scoped under .auth-shell.
+ * ------------------------------------------------------------------------- */
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+}
+
+/* --- Brand hero panel ---------------------------------------------------- */
+
+.auth-brand {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background:
+    radial-gradient(52rem 22rem at 88% -12%, rgba(242, 169, 59, 0.28), transparent 62%),
+    radial-gradient(40rem 20rem at -8% 112%, rgba(47, 154, 161, 0.38), transparent 58%),
+    linear-gradient(135deg, var(--dc-teal-950) 0%, var(--dc-teal-800) 55%, var(--dc-teal-700) 100%);
+}
+
+/* Faint blueprint grid, faded out with a radial mask (same as .dash-hero). */
+.auth-brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(58rem 26rem at 72% 18%, #000, transparent 74%);
+  -webkit-mask-image: radial-gradient(58rem 26rem at 72% 18%, #000, transparent 74%);
+  pointer-events: none;
+}
+
+.auth-brand-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+.auth-brand-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-wordmark {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.auth-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dc-marigold-400);
+  background: rgba(242, 169, 59, 0.12);
+  border: 1px solid rgba(242, 169, 59, 0.28);
+  padding: 7px 14px;
+  border-radius: 999px;
+  margin-bottom: 22px;
+}
+
+.auth-headline {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 2.6rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin-bottom: 18px;
+}
+
+.auth-headline em {
+  font-style: italic;
+  color: var(--dc-marigold-400);
+}
+
+.auth-lede {
+  margin: 0;
+  max-width: 460px;
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: rgba(220, 234, 232, 0.82);
+}
+
+.auth-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 26px;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: rgba(220, 234, 232, 0.9);
+}
+
+.auth-trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-trust svg {
+  flex-shrink: 0;
+  color: var(--dc-marigold-500);
+}
+
+/* Frosted-glass metric chips (reuses the global .hero-metric from index.css). */
+.auth-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+/* --- Form panel ---------------------------------------------------------- */
+
+.auth-form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+  background: var(--dc-bg);
+}
+
+.auth-form-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-form-card--wide {
+  max-width: 460px;
+}
+
+.auth-form-head {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.auth-form-logo {
+  display: inline-flex;
+  margin-bottom: 16px;
+}
+
+.auth-form-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--dc-heading);
+  margin: 0 0 6px;
+}
+
+.auth-form-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--dc-ink-soft);
+}
+
+.auth-form-footer {
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--dc-ink-soft);
+}
+
+/* --- Small screens: hero collapses into a compact gradient band ---------- */
+
+@media (max-width: 1023px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-brand {
+    border-radius: 0 0 2.25rem 2.25rem;
+    box-shadow: var(--dc-shadow-lift);
+  }
+
+  .auth-brand-inner {
+    padding: 36px 28px 32px;
+    gap: 26px;
+  }
+
+  .auth-headline {
+    font-size: 1.9rem;
+  }
+
+  .auth-lede {
+    font-size: 0.95rem;
+  }
+
+  /* Keep the phone flow short — chips are a desktop flourish. */
+  .auth-metrics {
+    display: none;
+  }
+
+  .auth-form-panel {
+    padding: 40px 20px 56px;
+  }
+}

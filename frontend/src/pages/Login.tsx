@@ -118,6 +118,7 @@ export default function Login() {
 
   return (
     <AuthShell
+      title="Welcome back"
       subtitle="Sign in to your account"
       footer={
         <>
