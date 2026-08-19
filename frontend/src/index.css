@@ -448,6 +448,32 @@ textarea:focus {
   transform: translateY(-1px);
 }
 
+/* Shimmer — a subtle diagonal light sweep on hover for solid buttons. */
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  to {
+    transform: translateX(250%) skewX(-15deg);
+  }
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%) skewX(-15deg);
+  pointer-events: none;
+}
+.btn-shimmer:hover::after {
+  animation: shimmer 0.6s ease-out;
+}
+
 /* Remove the thick focus-visible outline, use subtle teal ring instead */
 :focus-visible {
   outline: 2px solid rgba(21, 94, 99, 0.4);
@@ -678,10 +704,16 @@ body {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.form-control:hover,
+.form-select:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
 .form-control:focus,
 .form-select:focus {
-  border-color: #1b7a80;
-  box-shadow: 0 0 0 3px rgba(27, 122, 128, 0.1);
+  border-color: #155e63;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(21, 94, 99, 0.15), 0 0 0 1px rgba(21, 94, 99, 0.1);
 }
 
 .form-label {
@@ -1137,6 +1169,9 @@ body {
     animation: none;
   }
   .eye-toggle-enter {
+    animation: none !important;
+  }
+  .btn-shimmer::after {
     animation: none !important;
   }
 }
