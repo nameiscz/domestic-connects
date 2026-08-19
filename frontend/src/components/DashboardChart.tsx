@@ -25,7 +25,7 @@ export default function DashboardChart({
   return (
     <div className="col-lg-6">
       <div className="card shadow-sm h-100">
-        <div className="card-header bg-white">
+        <div className="card-header bg-card">
           <h4 className="h6 mb-0">{title}</h4>
         </div>
         <div className={`card-body ${bodyClassName}`}>

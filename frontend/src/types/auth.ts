@@ -34,6 +34,17 @@ export interface ResetPasswordPayload {
   newPassword: string;
 }
 
+export interface UpdateProfilePayload {
+  name: string;
+  email: string;
+  phone?: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
 /** Response body of POST /api/auth/forgot-password (one-time token + link). */
 export interface PasswordResetResponse {
   token: string;

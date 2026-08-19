@@ -34,6 +34,10 @@ public class User {
     @Builder.Default
     private boolean isActive = true;
 
+    /** Optional phone number — visible only to the user themselves. */
+    @Column(length = 20)
+    private String phone;
+
     @Column(updatable = false)
     private LocalDateTime createdAt;
 

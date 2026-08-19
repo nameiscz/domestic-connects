@@ -531,4 +531,231 @@ class AuthServiceTest {
                     .hasMessageContaining("User");
         }
     }
+
+    @Nested
+    @DisplayName("Update Profile")
+    class UpdateProfile {
+
+        @Test
+        @DisplayName("should update name, email and phone, and return fresh tokens")
+        void shouldUpdateProfile() {
+            User user = createTestUser(1L, "old@example.com", Role.WORKER, true);
+            user.setPhone("+91 12345 67890");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+            when(userRepository.save(any(User.class))).thenReturn(user);
+            when(jwtUtils.generateAccessToken("new@example.com", 1L, Role.WORKER))
+                    .thenReturn("new-access");
+            when(jwtUtils.generateRefreshToken("new@example.com"))
+                    .thenReturn("new-refresh");
+
+            UpdateProfileRequest request = new UpdateProfileRequest();
+            request.setName("Alice Updated");
+            request.setEmail("new@example.com");
+            request.setPhone("+91 99999 00000");
+
+            AuthResponse response = authService.updateProfile(1L, request);
+
+            assertThat(response.getAccessToken()).isEqualTo("new-access");
+            assertThat(response.getRefreshToken()).isEqualTo("new-refresh");
+            assertThat(response.getUser().getName()).isEqualTo("Alice Updated");
+            assertThat(response.getUser().getEmail()).isEqualTo("new@example.com");
+
+            verify(userRepository).save(userCaptor.capture());
+            User saved = userCaptor.getValue();
+            assertThat(saved.getName()).isEqualTo("Alice Updated");
+            assertThat(saved.getEmail()).isEqualTo("new@example.com");
+            assertThat(saved.getPhone()).isEqualTo("+91 99999 00000");
+        }
+
+        @Test
+        @DisplayName("should allow keeping the same email without duplicate-email error")
+        void shouldAllowSameEmail() {
+            User user = createTestUser(1L, "alice@example.com", Role.EMPLOYER, true);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(User.class))).thenReturn(user);
+            when(jwtUtils.generateAccessToken(anyString(), anyLong(), any())).thenReturn("tok");
+            when(jwtUtils.generateRefreshToken(anyString())).thenReturn("rtok");
+
+            UpdateProfileRequest request = new UpdateProfileRequest();
+            request.setName("Alice");
+            request.setEmail("alice@example.com");
+            request.setPhone(null);
+
+            AuthResponse response = authService.updateProfile(1L, request);
+
+            assertThat(response).isNotNull();
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getPhone()).isNull();
+        }
+
+        @Test
+        @DisplayName("should throw UserAlreadyExistsException when email is taken by another user")
+        void shouldThrowForDuplicateEmail() {
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.existsByEmail("taken@example.com")).thenReturn(true);
+
+            UpdateProfileRequest request = new UpdateProfileRequest();
+            request.setName("Alice");
+            request.setEmail("taken@example.com");
+
+            assertThatThrownBy(() -> authService.updateProfile(1L, request))
+                    .isInstanceOf(UserAlreadyExistsException.class)
+                    .hasMessageContaining("taken@example.com");
+
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should throw ResourceNotFoundException for non-existent user")
+        void shouldThrowForUnknownUser() {
+            when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+            UpdateProfileRequest request = new UpdateProfileRequest();
+            request.setName("Ghost");
+            request.setEmail("ghost@example.com");
+
+            assertThatThrownBy(() -> authService.updateProfile(999L, request))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("User");
+        }
+
+        @Test
+        @DisplayName("should clear phone when blank string is provided")
+        void shouldClearPhoneOnBlank() {
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
+            user.setPhone("+91 12345 67890");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(User.class))).thenReturn(user);
+            when(jwtUtils.generateAccessToken(anyString(), anyLong(), any())).thenReturn("tok");
+            when(jwtUtils.generateRefreshToken(anyString())).thenReturn("rtok");
+
+            UpdateProfileRequest request = new UpdateProfileRequest();
+            request.setName("Alice");
+            request.setEmail("alice@example.com");
+            request.setPhone("   ");
+
+            authService.updateProfile(1L, request);
+
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getPhone()).isNull();
+        }
+
+        @Test
+        @DisplayName("should trim whitespace from name, email and phone")
+        void shouldTrimInputs() {
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.save(any(User.class))).thenReturn(user);
+            when(jwtUtils.generateAccessToken(anyString(), anyLong(), any())).thenReturn("tok");
+            when(jwtUtils.generateRefreshToken(anyString())).thenReturn("rtok");
+
+            UpdateProfileRequest request = new UpdateProfileRequest();
+            request.setName("  Alice  ");
+            request.setEmail("  alice@example.com  ");
+            request.setPhone("  +91 123  ");
+
+            authService.updateProfile(1L, request);
+
+            verify(userRepository).save(userCaptor.capture());
+            User saved = userCaptor.getValue();
+            assertThat(saved.getName()).isEqualTo("Alice");
+            assertThat(saved.getEmail()).isEqualTo("alice@example.com");
+            assertThat(saved.getPhone()).isEqualTo("+91 123");
+        }
+    }
+
+    @Nested
+    @DisplayName("Change Password")
+    class ChangePassword {
+
+        @Test
+        @DisplayName("should change password after verifying current password")
+        void shouldChangePassword() {
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
+            user.setPassword("current-bcrypt");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches("Current1!", "current-bcrypt")).thenReturn(true);
+            when(passwordEncoder.encode("NewPass1!")).thenReturn("new-bcrypt");
+
+            ChangePasswordRequest request = new ChangePasswordRequest();
+            request.setCurrentPassword("Current1!");
+            request.setNewPassword("NewPass1!");
+
+            ApiResponse<Void> response = authService.changePassword(1L, request);
+
+            assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getMessage()).contains("successfully");
+
+            verify(passwordEncoder).matches("Current1!", "current-bcrypt");
+            verify(passwordEncoder).encode("NewPass1!");
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getPassword()).isEqualTo("new-bcrypt");
+        }
+
+        @Test
+        @DisplayName("should throw when current password is incorrect")
+        void shouldThrowForWrongCurrentPassword() {
+            User user = createTestUser(1L, "alice@example.com", Role.WORKER, true);
+            user.setPassword("current-bcrypt");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches("WrongPass1!", "current-bcrypt")).thenReturn(false);
+
+            ChangePasswordRequest request = new ChangePasswordRequest();
+            request.setCurrentPassword("WrongPass1!");
+            request.setNewPassword("NewPass1!");
+
+            assertThatThrownBy(() -> authService.changePassword(1L, request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("incorrect");
+
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should throw ResourceNotFoundException for non-existent user")
+        void shouldThrowForUnknownUser() {
+            when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+            ChangePasswordRequest request = new ChangePasswordRequest();
+            request.setCurrentPassword("Current1!");
+            request.setNewPassword("NewPass1!");
+
+            assertThatThrownBy(() -> authService.changePassword(999L, request))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("User");
+
+            verify(passwordEncoder, never()).matches(anyString(), anyString());
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should encode the new password before saving")
+        void shouldEncodeNewPassword() {
+            User user = createTestUser(1L, "alice@example.com", Role.EMPLOYER, true);
+            user.setPassword("old-bcrypt");
+
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(passwordEncoder.matches("OldPass1!", "old-bcrypt")).thenReturn(true);
+            when(passwordEncoder.encode("BrandNew1!")).thenReturn("brand-new-bcrypt");
+
+            ChangePasswordRequest request = new ChangePasswordRequest();
+            request.setCurrentPassword("OldPass1!");
+            request.setNewPassword("BrandNew1!");
+
+            authService.changePassword(1L, request);
+
+            verify(passwordEncoder).encode("BrandNew1!");
+            verify(userRepository).save(userCaptor.capture());
+            assertThat(userCaptor.getValue().getPassword()).isEqualTo("brand-new-bcrypt");
+        }
+    }
 }

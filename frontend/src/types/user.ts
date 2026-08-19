@@ -15,6 +15,8 @@ export interface User {
   role: Role;
   /** Wire name for `isActive` — present on admin/user-list payloads. */
   active?: boolean;
+  /** Optional phone number. */
+  phone?: string | null;
 }
 
 /** The persisted session shape stored under `dc_user` (User + access token). */

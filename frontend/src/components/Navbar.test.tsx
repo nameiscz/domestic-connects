@@ -215,7 +215,7 @@ describe('Navbar', () => {
       await user.click(screen.getByRole('button', { name: /Ana/i }));
 
       expect(await screen.findByRole('menuitem', { name: /my profile/i })).toBeInTheDocument();
-      expect(screen.getByRole('menuitem', { name: /dark mode|light mode/i })).toBeInTheDocument();
+      expect(screen.getByRole('switch', { name: /dark mode|light mode/i })).toBeInTheDocument();
       expect(screen.getByRole('menuitem', { name: /log out/i })).toBeInTheDocument();
     });
 

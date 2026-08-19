@@ -10,6 +10,7 @@ import {
   Star,
   Users,
   Wallet,
+  UserCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Role } from '../types';
@@ -34,6 +35,7 @@ export const NAV_LINKS: Record<Role, NavLinkItem[]> = {
     { to: '/worker/salary-slips', label: 'Salary', icon: Wallet },
     { to: '/worker/performance', label: 'Performance', icon: Star },
     { to: '/worker/notifications', label: 'Notifications', icon: Bell },
+    { to: '/worker/profile', label: 'Profile', icon: UserCircle },
   ],
   EMPLOYER: [
     { to: '/employer', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -43,6 +45,7 @@ export const NAV_LINKS: Record<Role, NavLinkItem[]> = {
     { to: '/employer/attendance', label: 'Mark Attendance', icon: CalendarCheck, end: true },
     { to: '/employer/reviews', label: 'Manage Reviews', icon: Star, end: true },
     { to: '/employer/reviews/new', label: 'Submit Review', icon: PenLine, end: true },
+    { to: '/employer/profile', label: 'Profile', icon: UserCircle },
   ],
   ADMIN: [
     { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },

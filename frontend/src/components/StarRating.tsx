@@ -33,7 +33,7 @@ export default function StarRating({ value, onChange }: StarRatingProps) {
               'hover:scale-110 active:scale-95',
               active
                 ? 'bg-marigold-100 text-marigold-600'
-                : 'border border-line bg-white text-ink-soft hover:border-marigold-500/40 hover:text-marigold-600',
+                : 'border border-line bg-card text-ink-soft hover:border-marigold-500/40 hover:text-marigold-600',
             ].join(' ')}
           >
             ★

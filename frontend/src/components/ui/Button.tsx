@@ -1,11 +1,10 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 
 /**
- * Button — the single button primitive for the migrated UI.
+ * Button — premium SaaS-style button primitive.
  *
- * Variants: primary (teal solid), secondary (white with border), ghost (text).
- * `isLoading` swaps in a spinner, disables the button and sets aria-busy so
- * async actions can't be double-submitted.
+ * Design: 16px radius for primary (auth), deep teal (#155E63) background,
+ * soft shadow, lift on hover, smooth 200ms transitions.
  */
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -18,17 +17,33 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: 'bg-teal-700 text-white hover:bg-teal-500 active:bg-teal-900',
-  secondary:
-    'border border-line bg-white text-ink hover:border-teal-500 hover:text-teal-700 active:bg-teal-100/50',
-  ghost: 'bg-transparent text-teal-700 hover:bg-teal-100 active:bg-teal-100',
-  danger: 'bg-danger text-white hover:bg-danger/90 active:bg-danger-text',
+  primary: [
+    'btn-shimmer relative overflow-hidden bg-[#155E63] text-white',
+    'shadow-[0_1px_2px_rgba(0,0,0,0.1),0_4px_12px_rgba(21,94,99,0.25)]',
+    'hover:bg-[#134f53] hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),0_8px_20px_rgba(21,94,99,0.3)]',
+    'hover:-translate-y-[1px]',
+    'active:bg-[#0f4246] active:translate-y-0',
+  ].join(' '),
+  secondary: [
+    'border border-black/[0.08] bg-card text-ink dark:border-white/[0.08]',
+    'shadow-[0_1px_2px_rgba(0,0,0,0.04)]',
+    'hover:border-teal-500/40 hover:text-teal-700 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]',
+    'active:bg-teal-50',
+  ].join(' '),
+  ghost: 'bg-transparent text-teal-700 hover:bg-teal-50 active:bg-teal-100',
+  danger: [
+    'btn-shimmer relative overflow-hidden bg-red-500 text-white',
+    'shadow-[0_1px_2px_rgba(0,0,0,0.1),0_4px_12px_rgba(239,68,68,0.25)]',
+    'hover:bg-red-600 hover:shadow-[0_2px_4px_rgba(0,0,0,0.1),0_8px_20px_rgba(239,68,68,0.3)]',
+    'hover:-translate-y-[1px]',
+    'active:bg-red-700 active:translate-y-0',
+  ].join(' '),
 };
 
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-6 py-3 text-base',
+  sm: 'px-3.5 py-2 text-sm rounded-xl',
+  md: 'px-5 py-2.5 text-sm rounded-xl',
+  lg: 'h-14 px-6 text-[15px] rounded-2xl font-semibold',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -42,8 +57,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
       className={[
-        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold',
-        'transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60',
+        'inline-flex items-center justify-center gap-2.5 font-semibold',
+        'transition-all duration-200 ease-out',
+        'disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none',
         VARIANT_CLASSES[variant],
         SIZE_CLASSES[size],
         className,

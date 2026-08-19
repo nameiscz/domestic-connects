@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { authApi } from '../api/authApi';
-import type { AuthResponse, RegisterPayload, SessionUser } from '../types';
+import type { AuthResponse, ChangePasswordPayload, RegisterPayload, SessionUser, UpdateProfilePayload } from '../types';
 
 /**
  * AuthContext — session state for the whole app.
@@ -35,6 +35,8 @@ export interface AuthContextType {
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, newPassword: string) => Promise<void>;
+  updateProfile: (payload: UpdateProfilePayload) => Promise<SessionUser>;
+  changePassword: (payload: ChangePasswordPayload) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -131,6 +133,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authApi.resetPassword({ token, newPassword });
   }, []);
 
+  const updateProfile = useCallback(async (payload: UpdateProfilePayload) => {
+    setIsLoading(true);
+    try {
+      const data = await authApi.updateProfile(payload);
+      const user = toSessionUser(data);
+      setCurrentUser(user);
+      return user;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const changePassword = useCallback(async (payload: ChangePasswordPayload) => {
+    await authApi.changePassword(payload);
+  }, []);
+
   const value = useMemo<AuthContextType>(
     () => ({
       currentUser,
@@ -141,8 +159,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       forgotPassword,
       resetPassword,
+      updateProfile,
+      changePassword,
     }),
-    [currentUser, isLoading, login, register, logout, forgotPassword, resetPassword]
+    [currentUser, isLoading, login, register, logout, forgotPassword, resetPassword, updateProfile, changePassword]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

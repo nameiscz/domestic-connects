@@ -364,15 +364,6 @@ a {
   --bs-table-bg: #16201d;
   --bs-table-border-color: var(--dc-border);
 }
-[data-bs-theme='dark'] .form-control,
-[data-bs-theme='dark'] .form-select {
-  border-color: #33413c;
-}
-[data-bs-theme='dark'] .input-group-text {
-  background: #16201d;
-  color: #7ec9cf;
-  border-color: #33413c;
-}
 [data-bs-theme='dark'] .card .card-body.text-center.py-5 {
   background: linear-gradient(180deg, #141c19, #0f1714);
 }
@@ -696,34 +687,6 @@ body {
   background: transparent;
 }
 
-.form-control,
-.form-select {
-  border-color: rgba(0, 0, 0, 0.08);
-  padding-block: 0.75rem;
-  border-radius: 0.875rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.form-control:hover,
-.form-select:hover {
-  border-color: rgba(0, 0, 0, 0.15);
-}
-
-.form-control:focus,
-.form-select:focus {
-  border-color: #155e63;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(21, 94, 99, 0.15), 0 0 0 1px rgba(21, 94, 99, 0.1);
-}
-
-.form-label {
-  font-weight: 600;
-  color: var(--dc-ink);
-}
-
-.input-group > .form-control:focus {
-  z-index: 0; /* keep the eye-toggle button clickable after focus */
-}
 
 .table > :not(caption) > * > * {
   border-bottom-color: rgba(0, 0, 0, 0.05);
@@ -890,17 +853,6 @@ body {
   margin-inline: auto;
 }
 
-/* Search toolbar (admin tables). */
-.input-group-text {
-  background: #f2f4ef;
-  border-color: #d5dcd2;
-  color: var(--dc-teal-700);
-}
-
-.form-control::placeholder {
-  color: #9aa69f;
-  opacity: 1;
-}
 
 /* Wage chip on worker job cards. */
 .chip-wage {
@@ -1174,4 +1126,181 @@ body {
   .btn-shimmer::after {
     animation: none !important;
   }
+}
+
+/* ==========================================================================
+ * DARK MODE — Tailwind utility overrides.
+ *
+ * Many components use hardcoded Tailwind utilities (bg-white, border-black/[0.08],
+ * hover:bg-black/[0.04], bg-teal-50, etc.) that don't adapt when the app
+ * switches to dark mode via [data-bs-theme='dark']. The rules below flip
+ * these utilities globally so every page stays readable in both themes
+ * without touching every component file individually.
+ * ==========================================================================
+ */
+
+/* --- Surfaces: white → dark card --- */
+[data-bs-theme='dark'] .bg-white {
+  background-color: var(--dc-card) !important;
+}
+[data-bs-theme='dark'] .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+[data-bs-theme='dark'] .bg-white\/20 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+/* Hero sections use bg-white/10 as a frosted overlay on a dark gradient;
+   keep them semi-transparent even in dark mode. */
+[data-bs-theme='dark'] .dash-hero .bg-white {
+  background-color: #ffffff !important;
+}
+
+/* --- Borders: black-based → border token --- */
+[data-bs-theme='dark'] [class*='border-black'] {
+  border-color: var(--dc-border) !important;
+}
+[data-bs-theme='dark'] [class*='divide-black'] > * + * {
+  border-color: var(--dc-border) !important;
+}
+
+/* --- Hover states: black-based → white-based --- */
+[data-bs-theme='dark'] [class*='hover\:bg-black'] {
+  --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+[data-bs-theme='dark'] [class*='hover\:bg-teal-50'] {
+  background-color: var(--dc-teal-200) !important;
+}
+[data-bs-theme='dark'] [class*='hover\:bg-teal-100'] {
+  background-color: var(--dc-teal-200) !important;
+}
+
+/* --- Light tint backgrounds → dark equivalents --- */
+[data-bs-theme='dark'] .bg-teal-50 {
+  background-color: var(--dc-teal-200) !important;
+}
+[data-bs-theme='dark'] .bg-teal-50\/40,
+[data-bs-theme='dark'] .bg-teal-100\/40,
+[data-bs-theme='dark'] .bg-teal-100\/50,
+[data-bs-theme='dark'] .bg-teal-100\/60 {
+  background-color: rgba(47, 138, 145, 0.15) !important;
+}
+[data-bs-theme='dark'] .bg-teal-100 {
+  background-color: var(--dc-teal-200) !important;
+}
+[data-bs-theme='dark'] .bg-red-50 {
+  background-color: var(--bs-danger-bg-subtle) !important;
+}
+[data-bs-theme='dark'] .bg-emerald-50 {
+  background-color: var(--bs-success-bg-subtle) !important;
+}
+[data-bs-theme='dark'] .bg-amber-50 {
+  background-color: var(--bs-warning-bg-subtle) !important;
+}
+
+/* --- Light text accents → darker for contrast --- */
+[data-bs-theme='dark'] [class*='text-\[\#155E63\]'] {
+  color: var(--dc-teal-400) !important;
+}
+[data-bs-theme='dark'] [class*='text-teal-700'] {
+  color: var(--dc-teal-400) !important;
+}
+[data-bs-theme='dark'] [class*='hover\:text-teal-700'] {
+  color: var(--dc-teal-400) !important;
+}
+
+/* --- Active states --- */
+[data-bs-theme='dark'] [class*='active\:bg-teal-100'] {
+  background-color: var(--dc-teal-200) !important;
+}
+[data-bs-theme='dark'] [class*='active\:bg-teal-50'] {
+  background-color: var(--dc-teal-200) !important;
+}
+[data-bs-theme='dark'] [class*='active\:bg-red-50'] {
+  background-color: var(--bs-danger-bg-subtle) !important;
+}
+
+/* --- Form inputs (hardcoded border-black/[0.08] pattern) --- */
+[data-bs-theme='dark'] [class*='rounded-\[14px\]'][class*='border-black'],
+[data-bs-theme='dark'] [class*='rounded-\[10px\]'][class*='border-black'] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-bs-theme='dark'] [class*='rounded-\[14px\]'][class*='border-black']:hover,
+[data-bs-theme='dark'] [class*='rounded-\[10px\]'][class*='border-black']:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* --- Select / option elements --- */
+[data-bs-theme='dark'] select {
+  background-color: var(--dc-card);
+  color: var(--dc-ink);
+}
+[data-bs-theme='dark'] select option {
+  background-color: var(--dc-card);
+  color: var(--dc-ink);
+}
+
+/* --- Form element date pickers & native controls --- */
+[data-bs-theme='dark'] input[type='date'],
+[data-bs-theme='dark'] input[type='month'],
+[data-bs-theme='dark'] input[type='time'],
+[data-bs-theme='dark'] input[type='number'] {
+  color-scheme: dark;
+}
+
+/* --- Modal dark surfaces --- */
+[data-bs-theme='dark'] .modal-content {
+  background-color: var(--dc-card);
+}
+[data-bs-theme='dark'] .modal-header {
+  border-bottom-color: var(--dc-border);
+}
+[data-bs-theme='dark'] .modal-footer {
+  border-top-color: var(--dc-border);
+}
+
+/* --- Pagination dark overrides --- */
+[data-bs-theme='dark'] .page-link {
+  background-color: var(--dc-card);
+  border-color: var(--dc-border);
+  color: var(--dc-teal-400);
+}
+[data-bs-theme='dark'] .page-link:hover {
+  background-color: var(--dc-teal-200);
+  color: var(--dc-teal-300);
+}
+[data-bs-theme='dark'] .page-item.active .page-link {
+  background-color: var(--dc-teal-700);
+  border-color: var(--dc-teal-700);
+}
+
+/* --- Table dark overrides --- */
+[data-bs-theme='dark'] .table > :not(caption) > * > * {
+  color: var(--dc-ink);
+  border-bottom-color: var(--dc-border);
+}
+[data-bs-theme='dark'] .table-hover > tbody > tr:hover > * {
+  background-color: rgba(47, 138, 145, 0.08);
+}
+
+/* --- Card header/footer --- */
+[data-bs-theme='dark'] .card-header,
+[data-bs-theme='dark'] .card-footer {
+  background-color: transparent !important;
+}
+
+/* --- Scrollbar dark mode --- */
+[data-bs-theme='dark'] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-bs-theme='dark'] ::-webkit-scrollbar-track {
+  background: var(--dc-bg);
+}
+[data-bs-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: var(--dc-border);
+  border-radius: 4px;
+}
+[data-bs-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: var(--dc-ink-mute);
 }

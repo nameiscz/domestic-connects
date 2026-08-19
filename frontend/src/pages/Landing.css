@@ -1,7 +1,12 @@
 /* ---------------------------------------------------------------------------
- * Marketing landing page. Every selector is scoped under .landing so the
- * design (which uses generic element selectors like header/nav/section/btn)
- * can never leak into the Bootstrap app shell.
+ * Landing page — premium SaaS redesign.
+ *
+ * Design principles:
+ * - No hard borders — shadows + subtle tints only
+ * - 14px radius buttons (not pill)
+ * - Ultra-soft layered shadows
+ * - Clean elevation hierarchy
+ * - Smooth 200ms transitions
  * ------------------------------------------------------------------------- */
 
 html {
@@ -46,14 +51,17 @@ html {
   padding: 0 24px;
 }
 
-/* NAV */
+/* -----------------------------------------------------------------------
+ * NAV — borderless, soft shadow only
+ * --------------------------------------------------------------------- */
 .landing header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(242, 244, 239, 0.88);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--dc-border);
+  background: rgba(242, 244, 239, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .landing nav {
@@ -92,18 +100,21 @@ html {
   align-items: center;
 }
 
+/* -----------------------------------------------------------------------
+ * BUTTONS — 14px radius, deep teal, soft shadow, lift hover
+ * --------------------------------------------------------------------- */
 .landing .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 12px 24px;
-  border-radius: 999px;
+  border-radius: 14px;
   font-weight: 600;
   font-size: 0.95rem;
-  border: 1.5px solid transparent;
+  border: none;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   white-space: nowrap;
 }
 
@@ -112,23 +123,26 @@ html {
 }
 
 .landing .btn-primary {
-  background: var(--dc-teal-700);
+  background: #155E63;
   color: #fff;
-  box-shadow: 0 8px 24px rgba(15, 82, 87, 0.25);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 4px 12px rgba(21, 94, 99, 0.25);
 }
 
 .landing .btn-primary:hover {
-  background: var(--dc-teal-900);
+  background: #134f53;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(21, 94, 99, 0.3);
 }
 
 .landing .btn-outline {
-  border-color: var(--dc-marigold-500);
+  border: 1px solid var(--dc-border);
   color: var(--dc-heading);
-  background: transparent;
+  background: var(--dc-card);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .landing .btn-outline:hover {
-  background: var(--dc-marigold-100);
+  border-color: var(--dc-marigold-500);
+  background: var(--dc-marigold-50);
 }
 
 .landing .btn-ghost {
@@ -149,21 +163,136 @@ html {
 
 .landing .theme-toggle {
   color: var(--dc-teal-700);
-  border-color: var(--dc-border);
+  border-color: transparent;
 }
 .landing .theme-toggle:hover {
   background: var(--dc-teal-100);
 }
 
-/* Dark-mode landing adjustments that tokens can't express. */
+/* -----------------------------------------------------------------------
+ * DARK MODE — premium surface mapping (cards, buttons, borders, nav)
+ * Follows Linear / Notion / Vercel pattern: surfaces use --dc-card,
+ * borders use --dc-border, text uses --dc-ink tokens.
+ * --------------------------------------------------------------------- */
+
+/* Nav */
 [data-bs-theme='dark'] .landing header {
-  background: rgba(13, 21, 19, 0.88);
+  background: rgba(13, 21, 19, 0.92);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 [data-bs-theme='dark'] .landing .theme-toggle {
   color: var(--dc-teal-500);
 }
 
-/* HERO */
+/* Eyebrow — keep readable on dark surfaces */
+[data-bs-theme='dark'] .landing .eyebrow {
+  background: var(--dc-teal-200);
+  color: var(--dc-teal-400);
+}
+
+/* Hero outline button */
+[data-bs-theme='dark'] .landing .btn-outline {
+  background: var(--dc-card);
+  border-color: var(--dc-border);
+  color: var(--dc-ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+[data-bs-theme='dark'] .landing .btn-outline:hover {
+  border-color: var(--dc-marigold-500);
+  background: var(--dc-marigold-100);
+  color: var(--dc-ink);
+}
+
+/* Ghost button */
+[data-bs-theme='dark'] .landing .btn-ghost {
+  color: var(--dc-ink);
+}
+
+/* Cards — swap white for --dc-card, update shadows */
+[data-bs-theme='dark'] .landing .verified-card {
+  background: var(--dc-card);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+[data-bs-theme='dark'] .landing .step {
+  background: var(--dc-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+[data-bs-theme='dark'] .landing .step:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+[data-bs-theme='dark'] .landing .feat-card {
+  background: var(--dc-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+[data-bs-theme='dark'] .landing .feat-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+[data-bs-theme='dark'] .landing .quote-card {
+  background: var(--dc-card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Step number pill */
+[data-bs-theme='dark'] .landing .step .num {
+  background: var(--dc-marigold-100);
+  color: var(--dc-marigold-500);
+}
+
+/* Feature card tags */
+[data-bs-theme='dark'] .landing .feat-card.household .tag {
+  background: var(--dc-teal-200);
+  color: var(--dc-teal-400);
+}
+[data-bs-theme='dark'] .landing .feat-card.worker .tag {
+  background: var(--dc-marigold-100);
+  color: var(--dc-marigold-500);
+}
+
+/* Verified card badge */
+[data-bs-theme='dark'] .landing .verified-card .badge {
+  color: var(--dc-teal-900);
+}
+
+/* Dot divider — subtle in dark */
+[data-bs-theme='dark'] .landing .dot-divider span {
+  background: rgba(255, 255, 255, 0.1);
+}
+[data-bs-theme='dark'] .landing .dot-divider span.filled {
+  background: var(--dc-teal-500);
+}
+
+/* Footer border */
+[data-bs-theme='dark'] .landing footer {
+  border-top-color: var(--dc-border);
+}
+
+/* Hero trust icons — use marigold in dark */
+[data-bs-theme='dark'] .landing .hero-trust svg {
+  color: var(--dc-marigold-500);
+}
+
+/* Feature list check marks */
+[data-bs-theme='dark'] .landing .feat-list svg {
+  color: var(--dc-teal-400);
+}
+[data-bs-theme='dark'] .landing .feat-card.worker .feat-list svg {
+  color: var(--dc-marigold-500);
+}
+
+/* Quote avatar */
+[data-bs-theme='dark'] .landing .quote-who .dot-avatar {
+  background: var(--dc-teal-200);
+}
+
+/* Backcard behind verified card */
+[data-bs-theme='dark'] .landing .backcard {
+  background: var(--dc-marigold-100);
+  opacity: 0.5;
+}
+
+/* -----------------------------------------------------------------------
+ * HERO
+ * --------------------------------------------------------------------- */
 .landing .hero {
   padding: 88px 0 60px;
 }
@@ -183,10 +312,10 @@ html {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--dc-teal-700);
-  background: var(--dc-teal-100);
+  color: #155E63;
+  background: var(--dc-teal-50);
   padding: 7px 14px;
-  border-radius: 999px;
+  border-radius: 10px;
   margin-bottom: 22px;
 }
 
@@ -233,10 +362,12 @@ html {
 
 .landing .hero-trust svg {
   flex-shrink: 0;
-  color: var(--dc-teal-700);
+  color: #155E63;
 }
 
-/* VERIFIED CARD — signature element */
+/* -----------------------------------------------------------------------
+ * VERIFIED CARD — borderless, soft shadow, floating animation
+ * --------------------------------------------------------------------- */
 .landing .card-stage {
   position: relative;
   display: flex;
@@ -249,22 +380,17 @@ html {
   background: var(--dc-card);
   border-radius: 20px;
   padding: 26px 24px 24px;
-  box-shadow: 0 20px 45px rgba(10, 59, 63, 0.18);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.08);
   transform: rotate(4deg);
-  border: 1px solid var(--dc-border);
+  border: none;
   position: relative;
   z-index: 2;
   animation: landing-float 5s ease-in-out infinite;
 }
 
 @keyframes landing-float {
-  0%,
-  100% {
-    transform: rotate(4deg) translateY(0);
-  }
-  50% {
-    transform: rotate(4deg) translateY(-10px);
-  }
+  0%, 100% { transform: rotate(4deg) translateY(0); }
+  50% { transform: rotate(4deg) translateY(-10px); }
 }
 
 .landing .verified-card .badge {
@@ -278,8 +404,8 @@ html {
   letter-spacing: 0.03em;
   text-transform: uppercase;
   padding: 6px 12px;
-  border-radius: 999px;
-  box-shadow: 0 6px 14px rgba(217, 143, 31, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(217, 143, 31, 0.3);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -288,8 +414,8 @@ html {
 .landing .avatar-ring {
   width: 64px;
   height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--dc-teal-500), var(--dc-teal-900));
+  border-radius: 16px;
+  background: linear-gradient(135deg, #155E63, var(--dc-teal-900));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -321,7 +447,7 @@ html {
 .landing .verified-card .stats {
   display: flex;
   gap: 18px;
-  border-top: 1px solid var(--dc-border);
+  border-top: 1px solid var(--dc-border-soft);
   padding-top: 14px;
 }
 
@@ -342,14 +468,14 @@ html {
   position: absolute;
   width: 290px;
   height: 340px;
-  background: var(--dc-marigold-100);
+  background: var(--dc-marigold-50);
   border-radius: 20px;
   transform: rotate(-7deg);
   top: 44px;
   z-index: 1;
 }
 
-/* dot divider — attendance motif */
+/* Dot divider */
 .landing .dot-divider {
   display: flex;
   justify-content: center;
@@ -361,14 +487,16 @@ html {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--dc-border);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .landing .dot-divider span.filled {
-  background: var(--dc-teal-700);
+  background: #155E63;
 }
 
-/* TRUST STRIP */
+/* -----------------------------------------------------------------------
+ * TRUST STRIP
+ * --------------------------------------------------------------------- */
 .landing .trust-strip {
   background: var(--dc-deep);
   padding: 22px 0;
@@ -395,7 +523,9 @@ html {
   color: var(--dc-marigold-500);
 }
 
-/* SECTIONS */
+/* -----------------------------------------------------------------------
+ * SECTIONS
+ * --------------------------------------------------------------------- */
 .landing section {
   padding: 88px 0;
 }
@@ -422,7 +552,9 @@ html {
   font-size: 1.05rem;
 }
 
-/* HOW IT WORKS */
+/* -----------------------------------------------------------------------
+ * HOW IT WORKS — borderless step cards
+ * --------------------------------------------------------------------- */
 .landing .steps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -431,9 +563,16 @@ html {
 
 .landing .step {
   background: var(--dc-card);
-  border: 1px solid var(--dc-border);
-  border-radius: var(--dc-radius, 16px);
+  border: none;
+  border-radius: 20px;
   padding: 32px 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.landing .step:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 .landing .step .num {
@@ -442,7 +581,13 @@ html {
   font-weight: 700;
   color: var(--dc-marigold-600);
   margin-bottom: 16px;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--dc-marigold-50);
 }
 
 .landing .step h3 {
@@ -456,7 +601,9 @@ html {
   margin: 0;
 }
 
-/* TWO COLUMN FEATURES */
+/* -----------------------------------------------------------------------
+ * TWO COLUMN FEATURES — borderless cards
+ * --------------------------------------------------------------------- */
 .landing .two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -465,9 +612,16 @@ html {
 
 .landing .feat-card {
   background: var(--dc-card);
-  border: 1px solid var(--dc-border);
-  border-radius: 16px;
+  border: none;
+  border-radius: 20px;
   padding: 36px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.landing .feat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 .landing .feat-card .tag {
@@ -477,17 +631,17 @@ html {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 5px 12px;
-  border-radius: 999px;
+  border-radius: 8px;
   margin-bottom: 18px;
 }
 
 .landing .feat-card.household .tag {
-  background: var(--dc-teal-100);
-  color: var(--dc-teal-700);
+  background: var(--dc-teal-50);
+  color: #155E63;
 }
 
 .landing .feat-card.worker .tag {
-  background: var(--dc-marigold-100);
+  background: var(--dc-marigold-50);
   color: var(--dc-marigold-600);
 }
 
@@ -516,14 +670,16 @@ html {
 .landing .feat-list svg {
   flex-shrink: 0;
   margin-top: 2px;
-  color: var(--dc-teal-700);
+  color: #155E63;
 }
 
 .landing .feat-card.worker .feat-list svg {
   color: var(--dc-marigold-600);
 }
 
-/* TESTIMONIALS */
+/* -----------------------------------------------------------------------
+ * TESTIMONIALS — borderless quote cards
+ * --------------------------------------------------------------------- */
 .landing .quotes {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -532,9 +688,10 @@ html {
 
 .landing .quote-card {
   background: var(--dc-card);
-  border: 1px solid var(--dc-border);
-  border-radius: 16px;
+  border: none;
+  border-radius: 20px;
   padding: 32px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .landing .quote-card p.q {
@@ -555,8 +712,8 @@ html {
 .landing .quote-who .dot-avatar {
   width: 38px;
   height: 38px;
-  border-radius: 50%;
-  background: var(--dc-teal-100);
+  border-radius: 10px;
+  background: var(--dc-teal-50);
 }
 
 .landing .quote-who b {
@@ -569,7 +726,9 @@ html {
   color: var(--dc-ink-soft);
 }
 
-/* FINAL CTA */
+/* -----------------------------------------------------------------------
+ * FINAL CTA
+ * --------------------------------------------------------------------- */
 .landing .final-cta {
   background: var(--dc-deep);
   border-radius: 28px;
@@ -596,17 +755,22 @@ html {
 }
 
 .landing .final-cta .btn-outline {
-  border-color: var(--dc-marigold-500);
+  border-color: rgba(255, 255, 255, 0.25);
   color: #fff;
+  background: transparent;
 }
 
 .landing .final-cta .btn-outline:hover {
   background: rgba(242, 169, 59, 0.15);
+  border-color: var(--dc-marigold-500);
 }
 
+/* -----------------------------------------------------------------------
+ * FOOTER — borderless
+ * --------------------------------------------------------------------- */
 .landing footer {
   padding: 56px 0 40px;
-  border-top: 1px solid var(--dc-border);
+  border-top: 1px solid var(--dc-border-soft);
   margin-top: 40px;
 }
 
@@ -624,6 +788,9 @@ html {
   gap: 24px;
 }
 
+/* -----------------------------------------------------------------------
+ * SCROLL REVEAL
+ * --------------------------------------------------------------------- */
 .landing .reveal {
   opacity: 0;
   transform: translateY(18px);
@@ -646,6 +813,9 @@ html {
   }
 }
 
+/* -----------------------------------------------------------------------
+ * RESPONSIVE
+ * --------------------------------------------------------------------- */
 @media (max-width: 920px) {
   .landing .hero-grid {
     grid-template-columns: 1fr;

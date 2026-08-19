@@ -5,9 +5,6 @@ interface PasswordRule {
   test: (value: string) => boolean;
 }
 
-// The five password rules, mirroring the shared policy in
-// src/utils/validation.ts (passwordError). Kept as pure predicates so the
-// checklist and the submit-time validation can never disagree.
 const RULES: PasswordRule[] = [
   { label: '8–10 characters', test: (v) => v.length >= 8 && v.length <= 10 },
   { label: 'Uppercase letter (A–Z)', test: (v) => /[A-Z]/.test(v) },
@@ -17,20 +14,19 @@ const RULES: PasswordRule[] = [
 ];
 
 /**
- * Live password rules checklist. Renders one row per rule; each row turns
- * green with a check as soon as the current password value satisfies it.
- * Place directly under a password input.
+ * Live password rules checklist. Each row turns green with a check as soon
+ * as the current password value satisfies it.
  */
 export default function PasswordChecklist({ value }: { value: string }) {
   return (
-    <ul className="password-checklist list-unstyled small mt-2 mb-0" role="list">
+    <ul className="mt-2 mb-0 space-y-1" role="list">
       {RULES.map((rule) => {
         const met = rule.test(value);
         return (
           <li
             key={rule.label}
-            className={`d-flex align-items-center gap-1 ${
-              met ? 'text-success' : 'text-muted'
+            className={`flex items-center gap-1.5 text-xs ${
+              met ? 'text-emerald-600 font-medium' : 'text-ink-mute'
             }`}
           >
             {met ? (

@@ -12,6 +12,7 @@ import type { Config } from 'tailwindcss';
  */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx,js,jsx}'],
+  darkMode: ['selector', '[data-bs-theme="dark"]'],
   corePlugins: {
     preflight: false,
   },
@@ -53,6 +54,7 @@ export default {
           50: 'color-mix(in srgb, var(--dc-marigold-50, #FEF6E4) calc(<alpha-value> * 100%), transparent)',
         },
         canvas: 'color-mix(in srgb, var(--dc-bg, #F5F6F2) calc(<alpha-value> * 100%), transparent)',
+        card: 'color-mix(in srgb, var(--dc-card, #FFFFFF) calc(<alpha-value> * 100%), transparent)',
         ink: {
           DEFAULT: 'color-mix(in srgb, var(--dc-ink, #14231F) calc(<alpha-value> * 100%), transparent)',
           soft: 'color-mix(in srgb, var(--dc-ink-soft, #51605A) calc(<alpha-value> * 100%), transparent)',

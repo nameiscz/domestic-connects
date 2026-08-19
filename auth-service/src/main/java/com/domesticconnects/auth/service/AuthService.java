@@ -170,6 +170,7 @@ public class AuthService {
                         .email(user.getEmail())
                         .role(user.getRole())
                         .isActive(user.isActive())
+                        .phone(user.getPhone())
                         .build())
                 .toList();
 
@@ -190,6 +191,7 @@ public class AuthService {
                         .email(user.getEmail())
                         .role(user.getRole())
                         .isActive(user.isActive())
+                        .phone(user.getPhone())
                         .build())
                 .toList();
 
@@ -328,6 +330,62 @@ public class AuthService {
     }
 
     /**
+     * Updates the authenticated user's profile (name, email, phone).
+     * If the email already belongs to another account, an exception is thrown.
+     */
+    @Transactional
+    public AuthResponse updateProfile(Long userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        // If the email changed, check it isn't taken.
+        if (!user.getEmail().equalsIgnoreCase(request.getEmail().trim())) {
+            if (userRepository.existsByEmail(request.getEmail().trim())) {
+                throw new UserAlreadyExistsException(
+                        "Email '" + request.getEmail() + "' is already in use");
+            }
+        }
+
+        user.setName(request.getName().trim());
+        user.setEmail(request.getEmail().trim());
+        user.setPhone(
+                request.getPhone() == null || request.getPhone().isBlank()
+                        ? null
+                        : request.getPhone().trim());
+        userRepository.save(user);
+
+        log.info("Profile updated for user {}", user.getEmail());
+
+        // Return a fresh auth response so the frontend session is refreshed.
+        String accessToken = jwtUtils.generateAccessToken(
+                user.getEmail(), user.getId(), user.getRole());
+        String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
+        return buildAuthResponse(user, accessToken, refreshToken);
+    }
+
+    /**
+     * Changes the authenticated user's password after verifying the current
+     * password. Returns a success response — the frontend session stays
+     * valid (no token rotation needed).
+     */
+    @Transactional
+    public ApiResponse<Void> changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        log.info("Password changed for user {}", user.getEmail());
+
+        return ApiResponse.success("Password changed successfully", null);
+    }
+
+    /**
      * Builds a standardized AuthResponse from a User entity and tokens.
      */
     private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken) {
@@ -342,6 +400,7 @@ public class AuthService {
                         .email(user.getEmail())
                         .role(user.getRole())
                         .isActive(user.isActive())
+                        .phone(user.getPhone())
                         .build())
                 .build();
     }

@@ -2,9 +2,10 @@ import { forwardRef, useId, useState, type InputHTMLAttributes } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
 /**
- * PasswordInput — labeled password field with a built-in eye-toggle button
- * inside the input. Supports both internal state (default) and external
- * `visible`/`onToggle` control for synchronized multi-field toggling.
+ * PasswordInput — labeled password field with a Netflix-minimal eye toggle.
+ *
+ * The toggle is just a faint icon at the right edge — no background,
+ * no border, no hover effect. Ultra-understated, like Netflix.
  */
 
 export interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -48,30 +49,27 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             aria-invalid={error ? true : undefined}
             aria-describedby={describedBy}
             className={[
-              'w-full rounded-[14px] border bg-white px-4 py-3.5 pr-12 text-[15px] text-ink',
+              'w-full rounded-[14px] border bg-card px-4 py-3.5 pr-12 text-[15px] text-ink',
               'placeholder:text-ink-soft/50',
               'transition-all duration-200',
               'focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]',
               error
                 ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
-                : 'border-black/[0.08] hover:border-black/[0.15]',
+                : 'border-black/[0.08] hover:border-black/[0.15] dark:border-white/[0.08] dark:hover:border-white/[0.15]',
               className,
             ].join(' ')}
             {...rest}
           />
+          {/* Netflix-minimal eye toggle — just a faint icon, nothing else */}
           <button
             type="button"
             onClick={toggle}
             aria-label={visible ? 'Hide password' : 'Show password'}
             aria-pressed={visible}
-            className={[
-              'absolute right-2.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center',
-              'rounded-lg text-ink-soft/50',
-              'transition-colors duration-200 hover:text-ink',
-            ].join(' ')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 border-none bg-transparent p-0 text-black/20 transition-colors hover:text-black/40 dark:text-white/20 dark:hover:text-white/40"
           >
             <span key={visible ? 'on' : 'off'} className="inline-flex eye-toggle-enter">
-              {visible ? <EyeOff size={16} strokeWidth={1.8} /> : <Eye size={16} strokeWidth={1.8} />}
+              {visible ? <EyeOff size={16} strokeWidth={1.5} /> : <Eye size={16} strokeWidth={1.5} />}
             </span>
           </button>
         </div>

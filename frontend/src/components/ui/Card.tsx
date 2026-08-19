@@ -1,8 +1,8 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
 /**
- * Card — the shared surface. Rounded, soft-bordered, subtle shadow; pass
- * `hover` for a gentle lift used on clickable cards.
+ * Card — premium surface. No visible border; layered ultra-soft shadow for
+ * depth. Matches Linear / Vercel card style.
  */
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
@@ -15,10 +15,11 @@ export function Card({ hover = false, flush = false, className = '', children, .
   return (
     <div
       className={[
-        'rounded-2xl border border-line bg-white shadow-card',
-        flush ? '' : 'p-5',
+        'rounded-2xl bg-card',
+        'shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.03)]',
+        flush ? '' : 'p-6',
         hover
-          ? 'transition-all duration-150 hover:-translate-y-0.5 hover:border-teal-500/40 hover:shadow-card-hover'
+          ? 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06),0_8px_24px_rgba(0,0,0,0.06)]'
           : '',
         className,
       ].join(' ')}
@@ -40,9 +41,9 @@ export function CardHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-4 flex items-start justify-between gap-3">
+    <div className="mb-5 flex items-start justify-between gap-3">
       <div>
-        <h3 className="font-display text-lg font-semibold text-ink">{title}</h3>
+        <h3 className="text-[17px] font-semibold tracking-tight text-ink">{title}</h3>
         {subtitle && <p className="mt-0.5 text-sm text-ink-soft">{subtitle}</p>}
       </div>
       {action}

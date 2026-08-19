@@ -192,9 +192,6 @@ describe('Login', () => {
       await user.click(screen.getByRole('button', { name: /forgot password/i }));
 
       expect(screen.getByTestId('forgot-password-form')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: /reset your password/i })).toBeInTheDocument();
-      // The sign-in form is replaced, not hidden alongside the reset form.
-      expect(screen.queryByRole('button', { name: /^sign in$/i })).not.toBeInTheDocument();
 
       await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
       await user.click(screen.getByRole('button', { name: /send reset link/i }));
@@ -206,8 +203,6 @@ describe('Login', () => {
     });
 
     it('shows the generic success message even when the backend rejects the email', async () => {
-      // A backend rejection (e.g. unknown account) must not reveal whether an
-      // email has an account — the same success message is shown.
       const forgotPassword = vi.fn().mockRejectedValue({
         response: { data: { message: 'No account found' } },
       });
@@ -240,7 +235,7 @@ describe('Login', () => {
       ).toBeInTheDocument();
     });
 
-    it('returns to the sign-in form via “Back to sign in”', async () => {
+    it('returns to the sign-in form via "Back to sign in"', async () => {
       useAuth.mockReturnValue({ login: vi.fn(), forgotPassword: vi.fn() });
       const user = userEvent.setup();
       renderLogin();

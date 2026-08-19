@@ -5,8 +5,7 @@ import Logo from '../components/Logo';
 import './Landing.css';
 
 // ---------------------------------------------------------------------------
-// Public marketing landing page (route "/"). CTAs point into the app:
-// "Log in" → /login, "Post a job" / "Find work near you" → /register.
+// Public marketing landing page (route "/"). Premium SaaS redesign.
 // ---------------------------------------------------------------------------
 
 const Star = () => (
@@ -86,9 +85,7 @@ const PersonIcon = () => (
 );
 
 /**
- * Reveals `.reveal` elements as they scroll into view. Falls back to showing
- * everything immediately when IntersectionObserver is unavailable (and in
- * jsdom tests).
+ * Reveals `.reveal` elements as they scroll into view.
  */
 function useRevealOnScroll() {
   useEffect(() => {

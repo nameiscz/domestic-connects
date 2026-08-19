@@ -15,19 +15,21 @@ import type { NotificationLog, NotificationType } from '../types';
 /**
  * Shared navbar for the signed-in area: brand, role-aware icon links with
  * active pill highlighting, a worker-only notification bell (unread badge +
- * hover dropdown), and a compact profile chip whose dropdown holds the theme
- * toggle and Log out. Sticky, blurred teal surface; mobile gets a hamburger-
- * driven slide-in panel.
- *
- * Mounted by DashboardLayout, so it is visible across every role dashboard
- * (including nested routes like /worker/jobs).
+ * hover dropdown), and a premium profile chip whose dropdown holds user
+ * info, profile link, a modern dark mode toggle, and a separated logout.
  */
 
-// Role → Bootstrap accent dot in the profile dropdown (mirrors each dashboard).
+// Role → accent dot in the profile dropdown.
 const ROLE_ACCENT: Record<string, string> = {
   WORKER: 'primary',
   EMPLOYER: 'success',
   ADMIN: 'danger',
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  WORKER: 'Worker',
+  EMPLOYER: 'Employer',
+  ADMIN: 'Admin',
 };
 
 const NOTIFICATION_LABEL: Record<NotificationType, string> = {
@@ -46,8 +48,40 @@ function initials(name?: string): string {
     .toUpperCase();
 }
 
+/** Modern toggle switch for dark mode — 44px height, teal active state. */
+function DarkModeToggle({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={isDark}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      onClick={onToggle}
+      className="flex h-[44px] w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-ink transition-colors hover:bg-black/[0.04]"
+    >
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/[0.05] text-ink-soft">
+        {isDark ? <Sun size={16} strokeWidth={2} /> : <Moon size={16} strokeWidth={2} />}
+      </span>
+      <span className="flex-1 text-left">{isDark ? 'Light mode' : 'Dark mode'}</span>
+      {/* Toggle switch */}
+      <span
+        className={[
+          'relative inline-flex h-6 w-11 flex-none items-center rounded-full transition-colors duration-250 ease-in-out',
+          isDark ? 'bg-[#155E63]' : 'bg-black/[0.15]',
+        ].join(' ')}
+      >
+        <span
+          className={[
+            'inline-block h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform duration-250 ease-in-out',
+            isDark ? 'translate-x-[22px]' : 'translate-x-[3px]',
+          ].join(' ')}
+        />
+      </span>
+    </button>
+  );
+}
+
 interface NavbarProps {
-  /** Bootstrap accent name for the profile role dot (defaults per role). */
   accent?: string;
 }
 
@@ -65,11 +99,8 @@ export default function Navbar({ accent }: NavbarProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [recentNotifications, setRecentNotifications] = useState<NotificationLog[]>([]);
 
-  // The notification inbox is worker-only (the backend enforces it), so the
-  // bell + unread badge only render for WORKER sessions.
   const unreadCount = useUnreadNotifications(role === 'WORKER' ? currentUser?.id : null);
 
-  // Best-effort fetch of the 5 most recent notifications for the bell dropdown.
   useEffect(() => {
     if (role !== 'WORKER' || !currentUser?.id) {
       setRecentNotifications([]);
@@ -91,8 +122,6 @@ export default function Navbar({ accent }: NavbarProps) {
 
   const handleLogout = () => {
     logout();
-    // Redirect explicitly (replace so the Back button doesn't land back on
-    // the dashboard the user just logged out of).
     navigate('/login', { replace: true });
   };
 
@@ -104,7 +133,7 @@ export default function Navbar({ accent }: NavbarProps) {
           Domestic Connects
         </Link>
 
-        {/* Desktop navigation links (with icons) */}
+        {/* Desktop navigation links */}
         <div className="ml-2 hidden items-center gap-1 lg:flex">
           {links.map(({ to, label, icon: Icon, end }) => (
             <NavLink
@@ -138,31 +167,31 @@ export default function Navbar({ accent }: NavbarProps) {
                 {unreadCount > 0 && (
                   <span
                     data-testid="unread-notifications-badge"
-                    className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white"
+                    className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
                   >
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </Link>
 
-              {/* Hover/focus dropdown — 5 most recent notifications. */}
-              <div className="invisible absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-white p-2 opacity-0 shadow-card transition-all duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              {/* Hover dropdown — 5 most recent notifications. */}
+              <div className="invisible absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-black/[0.06] bg-white dark:bg-card dark:border-white/[0.06] p-2 opacity-0 shadow-[0_12px_40px_rgba(0,0,0,0.12)] transition-all duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                 <p className="px-3 pb-1 pt-2 text-xs font-bold uppercase tracking-wide text-ink-soft">
                   Notifications
                 </p>
                 {recentNotifications.length === 0 ? (
                   <p className="px-3 py-3 text-sm text-ink-soft">Nothing yet — we&apos;ll let you know.</p>
                 ) : (
-                  <ul className="divide-y divide-line/70">
+                  <ul className="divide-y divide-black/[0.06]">
                     {recentNotifications.slice(0, 5).map((n) => (
                       <li key={n.id}>
                         <Link
                           to="/worker/notifications"
-                          className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 transition-colors hover:bg-teal-100/40"
+                          className="flex items-start gap-2.5 rounded-xl px-3 py-2.5 transition-colors hover:bg-teal-50"
                         >
                           <span
                             className={`mt-0.5 h-2 w-2 flex-none rounded-full ${
-                              n.isRead ? 'bg-line' : 'bg-marigold-500'
+                              n.isRead ? 'bg-black/[0.1]' : 'bg-amber-400'
                             }`}
                             aria-hidden="true"
                           />
@@ -182,7 +211,7 @@ export default function Navbar({ accent }: NavbarProps) {
                 )}
                 <Link
                   to="/worker/notifications"
-                  className="mt-1 block rounded-xl bg-teal-100/60 px-3 py-2 text-center text-sm font-semibold text-teal-700 transition-colors hover:bg-teal-100"
+                  className="mt-1 block rounded-xl bg-teal-50 px-3 py-2 text-center text-sm font-semibold text-[#155E63] transition-colors hover:bg-teal-100"
                 >
                   View all notifications
                 </Link>
@@ -190,7 +219,7 @@ export default function Navbar({ accent }: NavbarProps) {
             </div>
           )}
 
-          {/* Compact profile chip + dropdown */}
+          {/* Premium profile chip + dropdown */}
           {currentUser && (
             <div className="relative">
               <button
@@ -198,20 +227,19 @@ export default function Navbar({ accent }: NavbarProps) {
                 onClick={() => setProfileOpen((v) => !v)}
                 aria-haspopup="menu"
                 aria-expanded={profileOpen}
-                className="navbar-profile-chip flex items-center gap-2 rounded-full border border-white/15 py-1 pl-1 pr-2.5 transition-colors"
+                className="flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.08] py-1 pl-1 pr-2.5 transition-colors hover:bg-white/[0.14]"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-marigold-500 text-xs font-bold text-teal-900">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-xs font-bold text-teal-900 shadow-[0_0_0_2px_rgba(255,255,255,0.2)]">
                   {initials(currentUser.name)}
                 </span>
                 <span className="hidden max-w-24 truncate text-sm font-semibold text-white md:block">
                   {currentUser.name}
                 </span>
-                <ChevronDown size={14} className="text-white/70" aria-hidden="true" />
+                <ChevronDown size={14} className="text-white/60" aria-hidden="true" />
               </button>
 
               {profileOpen && (
                 <>
-                  {/* Invisible backdrop closes the menu on outside click. */}
                   <div
                     className="fixed inset-0 z-40"
                     onClick={() => setProfileOpen(false)}
@@ -219,52 +247,60 @@ export default function Navbar({ accent }: NavbarProps) {
                   />
                   <div
                     role="menu"
-                    className="absolute right-0 top-full z-50 mt-2 w-60 animate-scale-in rounded-2xl border border-line bg-white p-1.5 shadow-card-hover"
+                    className="absolute right-0 top-full z-50 mt-2 w-64 animate-scale-in overflow-hidden rounded-3xl border border-black/[0.06] bg-white dark:bg-card dark:border-white/[0.06] shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
                   >
-                    <div className="border-b border-line px-3 pb-2.5 pt-2">
-                      <p className="truncate text-sm font-semibold text-ink">{currentUser.name}</p>
-                      <p className="truncate text-xs text-ink-soft">{currentUser.email}</p>
+                    {/* User info header */}
+                    <div className="border-b border-black/[0.06] px-4 pb-3 pt-4">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-sm font-bold text-teal-900 shadow-[0_0_0_2px_rgba(255,255,255,0.3),0_2px_8px_rgba(0,0,0,0.08)]">
+                          {initials(currentUser.name)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-ink">{currentUser.name}</p>
+                          <p className="truncate text-xs text-ink-soft">{currentUser.email}</p>
+                        </div>
+                      </div>
                       {role && (
-                        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-ink-soft">
+                        <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-black/[0.04] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-ink-soft">
                           <span
                             className={`h-1.5 w-1.5 rounded-full bg-${roleDotAccent}`}
                             aria-hidden="true"
                           />
-                          {role}
-                        </p>
+                          {ROLE_LABEL[role] || role}
+                        </span>
                       )}
                     </div>
-                    <Link
-                      to={homePath}
-                      role="menuitem"
-                      onClick={() => setProfileOpen(false)}
-                      className="mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-ink transition-colors hover:bg-teal-100/60"
-                    >
-                      <User size={15} className="text-ink-soft" aria-hidden="true" />
-                      My Profile
-                    </Link>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={toggle}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium text-ink transition-colors hover:bg-teal-100/60"
-                    >
-                      {isDark ? (
-                        <Sun size={15} className="text-ink-soft" aria-hidden="true" />
-                      ) : (
-                        <Moon size={15} className="text-ink-soft" aria-hidden="true" />
-                      )}
-                      {isDark ? 'Light mode' : 'Dark mode'}
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={handleLogout}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm font-medium text-danger-text transition-colors hover:bg-danger-soft/60"
-                    >
-                      <LogOut size={15} aria-hidden="true" />
-                      Log out
-                    </button>
+
+                    {/* Menu items */}
+                    <div className="p-1.5">
+                      <Link
+                        to={role === 'ADMIN' ? homePath : `${homePath.replace(/\/$/, '')}/profile`}
+                        role="menuitem"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-black/[0.04]"
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-black/[0.05] text-ink-soft">
+                          <User size={15} strokeWidth={2} />
+                        </span>
+                        My Profile
+                      </Link>
+                      <DarkModeToggle isDark={isDark} onToggle={toggle} />
+                    </div>
+
+                    {/* Separated logout section */}
+                    <div className="border-t border-black/[0.06] p-1.5">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                      >
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500">
+                          <LogOut size={15} strokeWidth={2} />
+                        </span>
+                        Log out
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -318,7 +354,7 @@ export default function Navbar({ accent }: NavbarProps) {
                 onClick={handleLogout}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-white/25 px-3 py-1.5 text-sm font-semibold text-white"
               >
-                <LogOut size={15} aria-hidden="true" />
+                <LogOut size={15} />
                 Log out
               </button>
             )}

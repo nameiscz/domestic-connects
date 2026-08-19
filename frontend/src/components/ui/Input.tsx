@@ -1,8 +1,10 @@
 import { forwardRef, useId, type InputHTMLAttributes } from 'react';
 
 /**
- * Input — labeled text input with optional helper text and a validated error
- * state (red border + message, aria-invalid + aria-describedby wiring).
+ * Input — premium SaaS-style labeled text input.
+ *
+ * Design: 56px height, 14px radius, 1px subtle neutral border, soft teal
+ * focus ring. Matches Linear / Notion / Stripe Dashboard quality.
  */
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -36,10 +38,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={[
-          'w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm text-ink',
-          'placeholder:text-ink-soft/60',
-          'focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25',
-          error ? 'border-danger' : 'border-line hover:border-ink-soft/40',
+          'w-full rounded-[14px] border bg-card px-4 py-3.5 text-[15px] text-ink',
+          'placeholder:text-ink-soft/50',
+          'transition-all duration-200',
+          'focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]',
+          error
+            ? 'border-red-300 focus:border-red-400 focus:ring-red-100'
+            : 'border-black/[0.08] hover:border-black/[0.15] dark:border-white/[0.08] dark:hover:border-white/[0.15]',
           className,
         ].join(' ')}
         {...rest}
@@ -50,7 +55,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         </p>
       )}
       {error && (
-        <p id={`${inputId}-error`} role="alert" className="mt-1.5 text-xs font-medium text-danger-text">
+        <p id={`${inputId}-error`} role="alert" className="mt-1.5 text-xs font-medium text-red-500">
           {error}
         </p>
       )}

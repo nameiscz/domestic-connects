@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+// wildcard imports cover all DTOs (UpdateProfileRequest, ChangePasswordRequest, etc.)
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -64,6 +66,31 @@ public class AuthController {
     }
 
     /**
+     * Updates the authenticated user's profile (name, email, phone).
+     * Requires a valid JWT token. Returns a refreshed auth response so the
+     * frontend session can pick up the updated name/email.
+     */
+    @PutMapping("/profile")
+    public ResponseEntity<AuthResponse> updateProfile(
+            @Valid @RequestBody UpdateProfileRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = extractUserId(httpRequest);
+        return ResponseEntity.ok(authService.updateProfile(userId, request));
+    }
+
+    /**
+     * Changes the authenticated user's password after verifying the current
+     * password. Requires a valid JWT token.
+     */
+    @PutMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletRequest httpRequest) {
+        Long userId = extractUserId(httpRequest);
+        return ResponseEntity.ok(authService.changePassword(userId, request));
+    }
+
+    /**
      * Lists active workers for the employer job-assignment picker.
      * The path is permitted at the security layer (see {@code SecurityConfig})
      * so direct Feign callers work; EMPLOYER/ADMIN authorisation is enforced
@@ -75,6 +102,22 @@ public class AuthController {
             HttpServletRequest request) {
         requireRole(request, ROLE_EMPLOYER, ROLE_ADMIN);
         return ResponseEntity.ok(authService.getWorkers());
+    }
+
+    /**
+     * Extracts the caller's numeric user-ID from the gateway-forwarded
+     * {@code X-User-Id} header (set by the JWT filter / gateway).
+     */
+    private Long extractUserId(HttpServletRequest request) {
+        String raw = request.getHeader("X-User-Id");
+        if (raw == null || raw.isBlank()) {
+            throw new AccessDeniedException("Missing user-ID header");
+        }
+        try {
+            return Long.parseLong(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new AccessDeniedException("Invalid user-ID header");
+        }
     }
 
     /**

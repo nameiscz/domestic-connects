@@ -26,6 +26,7 @@ import UserManagement from './pages/admin/UserManagement';
 import JobManagement from './pages/admin/JobManagement';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AuditLogs from './pages/admin/AuditLogs';
+import Profile from './pages/Profile';
 import PageTitle from './components/PageTitle';
 
 /**
@@ -67,6 +68,7 @@ export default function App() {
             <Route path="salary-slips" element={<MySalarySlips />} />
             <Route path="performance" element={<MyPerformance />} />
             <Route path="notifications" element={<Notifications />} />
+            <Route path="profile" element={<Profile />} />
           </Route>
           <Route
             path="/employer"
@@ -83,6 +85,7 @@ export default function App() {
             <Route path="attendance" element={<MarkAttendance />} />
             <Route path="reviews" element={<ManageReviews />} />
             <Route path="reviews/new" element={<SubmitReview />} />
+            <Route path="profile" element={<Profile />} />
           </Route>
           <Route
             path="/admin"

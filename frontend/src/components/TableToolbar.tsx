@@ -41,7 +41,7 @@ export default function TableToolbar({
         </span>
         <input
           type="search"
-          className="w-full rounded-[14px] border border-black/[0.08] bg-white py-2 pl-9 pr-4 text-sm text-ink placeholder:text-ink-soft/50 transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
+          className="w-full rounded-[14px] border border-black/[0.08] bg-card py-2 pl-9 pr-4 text-sm text-ink placeholder:text-ink-soft/50 transition-all duration-200 hover:border-black/[0.15] dark:border-white/[0.08] dark:hover:border-white/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
           placeholder={searchPlaceholder}
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -55,7 +55,7 @@ export default function TableToolbar({
         </span>
 
         <select
-          className="appearance-none rounded-[10px] border border-black/[0.08] bg-white px-3 py-1.5 text-sm text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
+          className="appearance-none rounded-[10px] border border-black/[0.08] bg-card px-3 py-1.5 text-sm text-ink transition-all duration-200 hover:border-black/[0.15] dark:border-white/[0.08] dark:hover:border-white/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
           style={{ width: 'auto' }}
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}

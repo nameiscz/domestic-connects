@@ -45,7 +45,7 @@ function SummaryStat({
     neutral: 'bg-line/50 text-ink-soft',
   };
   return (
-    <div className="rounded-2xl border border-line bg-white p-4 shadow-card">
+    <div className="rounded-2xl border border-line bg-card p-4 shadow-card">
       <div
         className={`mb-1 inline-flex rounded-full px-2.5 py-0.5 text-sm font-bold ${toneClasses[tone]}`}
       >
@@ -76,7 +76,7 @@ export default function AttendanceReportView({
 
   if (records.length === 0) {
     return (
-      <div className="rounded-2xl border border-line bg-white py-12 text-center shadow-card">
+      <div className="rounded-2xl border border-line bg-card py-12 text-center shadow-card">
         <p className="mb-1 text-3xl" aria-hidden="true">
           📅
         </p>
@@ -99,7 +99,7 @@ export default function AttendanceReportView({
       </div>
 
       {/* Records table */}
-      <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+      <div className="overflow-hidden rounded-2xl border border-line bg-card shadow-card">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>

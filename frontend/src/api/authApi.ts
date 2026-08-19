@@ -3,11 +3,13 @@ import axiosInstance from './axiosInstance';
 import type {
   ApiResponse,
   AuthResponse,
+  ChangePasswordPayload,
   ForgotPasswordPayload,
   LoginPayload,
   PasswordResetResponse,
   RegisterPayload,
   ResetPasswordPayload,
+  UpdateProfilePayload,
 } from '../types';
 
 /** Auth-service endpoints, routed through the gateway at /api/auth/** */
@@ -44,6 +46,17 @@ export const authApi = {
   /** POST /api/auth/reset-password */
   async resetPassword(payload: ResetPasswordPayload): Promise<void> {
     await axiosInstance.post<ApiResponse<null>>('/api/auth/reset-password', payload);
+  },
+
+  /** PUT /api/auth/profile — update name, email, phone. Returns refreshed session. */
+  async updateProfile(payload: UpdateProfilePayload): Promise<AuthResponse> {
+    const { data } = await axiosInstance.put<AuthResponse>('/api/auth/profile', payload);
+    return data;
+  },
+
+  /** PUT /api/auth/change-password — change password after verifying current one. */
+  async changePassword(payload: ChangePasswordPayload): Promise<void> {
+    await axiosInstance.put<ApiResponse<null>>('/api/auth/change-password', payload);
   },
 
   /** GET /api/auth/workers — active worker directory (employer/admin only). */

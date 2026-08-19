@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
- * Toast system for the migrated UI.
- *
- *   const { toasts, pushToast, dismissToast } = useToast();
- *   pushToast('Saved!', 'success');
- *   <ToastStack toasts={toasts} onDismiss={dismissToast} />
- *
+ * Toast system for the premium UI.
  * Toasts auto-dismiss after 4.5s and stack in a fixed top-right live region.
  */
 
@@ -21,9 +16,15 @@ export interface ToastItem {
 const AUTO_DISMISS_MS = 4500;
 
 const VARIANT_ACCENT: Record<ToastVariant, string> = {
-  success: 'border-l-teal-500',
-  error: 'border-l-danger',
-  info: 'border-l-teal-700',
+  success: 'border-l-[3px] border-l-emerald-500',
+  error: 'border-l-[3px] border-l-red-500',
+  info: 'border-l-[3px] border-l-[#155E63]',
+};
+
+const VARIANT_ICON_BG: Record<ToastVariant, string> = {
+  success: 'bg-emerald-50 text-emerald-600',
+  error: 'bg-red-50 text-red-500',
+  info: 'bg-teal-50 text-[#155E63]',
 };
 
 const VARIANT_ICON: Record<ToastVariant, string> = {
@@ -52,7 +53,6 @@ export function useToast() {
     [dismissToast]
   );
 
-  // Clear pending auto-dismiss timers when the consuming component unmounts.
   useEffect(
     () => () => {
       timersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -74,7 +74,7 @@ export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
 
   return (
     <div
-      className="pointer-events-none fixed right-4 top-4 z-[1080] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2"
+      className="pointer-events-none fixed right-4 top-4 z-[1080] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-2.5"
       aria-live="polite"
       aria-atomic="true"
     >
@@ -83,23 +83,24 @@ export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
           key={toast.id}
           role="status"
           className={[
-            'pointer-events-auto flex items-start gap-2.5 rounded-xl border border-line bg-white p-3.5 shadow-card',
-            'animate-toast-in border-l-4',
+            'pointer-events-auto flex items-start gap-3 rounded-2xl bg-card p-4',
+            'shadow-[0_4px_16px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)]',
+            'animate-toast-in',
             VARIANT_ACCENT[toast.variant],
           ].join(' ')}
         >
           <span
             aria-hidden="true"
-            className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-teal-100 text-xs font-bold text-teal-700"
+            className={`mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full text-xs font-bold ${VARIANT_ICON_BG[toast.variant]}`}
           >
             {VARIANT_ICON[toast.variant]}
           </span>
-          <p className="flex-1 text-sm text-ink">{toast.message}</p>
+          <p className="flex-1 text-sm font-medium text-ink">{toast.message}</p>
           <button
             type="button"
             aria-label="Dismiss notification"
             onClick={() => onDismiss(toast.id)}
-            className="-m-1 flex h-6 w-6 flex-none items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-line/60 hover:text-ink"
+            className="-m-1 flex h-7 w-7 flex-none items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-black/[0.05] hover:text-ink"
           >
             ✕
           </button>

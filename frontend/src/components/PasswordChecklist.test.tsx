@@ -5,7 +5,7 @@ import PasswordChecklist from './PasswordChecklist';
 const ruleItems = () =>
   screen.getAllByRole('listitem').map((li) => ({
     text: within(li).getByText(/./).textContent,
-    met: li.classList.contains('text-success'),
+    met: li.classList.contains('text-emerald-600'),
   }));
 
 describe('PasswordChecklist', () => {

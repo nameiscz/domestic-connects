@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { KeyRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_HOME } from '../constants/roles';
 import { AuthShell, Button, Input, PasswordInput } from '../components/ui';
@@ -96,9 +95,6 @@ export default function Login() {
       setResetSent(true);
     } catch (err) {
       if ((err as { response?: unknown })?.response) {
-        // Backend-level rejection (e.g. unknown email) — still show the
-        // generic success message so the form can't be used to probe which
-        // emails have accounts.
         setResetSent(true);
       } else {
         setResetError(errorMessage(err));
@@ -153,38 +149,24 @@ export default function Login() {
             </div>
           ) : (
             <>
-              <div className="mb-6 flex items-center gap-3">
-                <span className="flex h-11 w-11 flex-none items-center justify-center rounded-2xl bg-teal-50 text-[#155E63]">
-                  <KeyRound size={20} strokeWidth={2} aria-hidden="true" />
-                </span>
-                <div>
-                  <h2 className="text-[17px] font-semibold leading-tight text-ink">
-                    Reset your password
-                  </h2>
-                  <p className="mt-0.5 text-sm text-ink-soft">
-                    Enter your account email and we&apos;ll send you a link to
-                    reset your password.
-                  </p>
-                </div>
-              </div>
-
               {resetError && <ErrorBanner message={resetError} />}
 
               <form onSubmit={handleForgotPassword} noValidate>
-                <Input
-                  id="reset-email"
-                  type="email"
-                  label="Email address"
-                  placeholder="you@example.com"
-                  value={resetEmail}
-                  onChange={(e) => {
-                    setResetEmail(e.target.value);
-                    if (resetError) setResetError('');
-                  }}
-                  autoComplete="email"
-                  autoFocus
-                  className="mb-5"
-                />
+                <div className="mb-5">
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    label="Email address"
+                    placeholder="you@example.com"
+                    value={resetEmail}
+                    onChange={(e) => {
+                      setResetEmail(e.target.value);
+                      if (resetError) setResetError('');
+                    }}
+                    autoComplete="email"
+                    autoFocus
+                  />
+                </div>
                 <Button type="submit" className="w-full h-12 rounded-2xl text-[15px]" isLoading={resetSubmitting}>
                   {resetSubmitting ? 'Sending…' : 'Send reset link'}
                 </Button>
@@ -192,7 +174,7 @@ export default function Login() {
 
               <button
                 type="button"
-                className="mt-4 w-full text-center text-sm font-medium text-[#155E63] transition-colors hover:text-teal-700 hover:underline"
+                className="mt-4 w-full text-center text-[13px] text-black/30 transition-colors hover:text-black/50 dark:text-white/30 dark:hover:text-white/50"
                 onClick={backToSignIn}
               >
                 ← Back to sign in
@@ -226,7 +208,7 @@ export default function Login() {
             />
           </div>
 
-          <div className="mb-5">
+          <div className="mb-2">
             <PasswordInput
               id="password"
               label="Password"
@@ -239,9 +221,13 @@ export default function Login() {
               error={errors.password}
               autoComplete="current-password"
             />
+          </div>
+
+          {/* Netflix-style: tiny, muted, understated forgot password link */}
+          <div className="mb-5 text-right">
             <button
               type="button"
-              className="mt-2 block text-[13px] font-medium text-[#155E63] transition-colors hover:text-teal-700 hover:underline"
+              className="text-[13px] text-black/30 transition-colors hover:text-black/50 dark:text-white/30 dark:hover:text-white/50"
               onClick={() => {
                 setResetMode(true);
                 setServerError('');
