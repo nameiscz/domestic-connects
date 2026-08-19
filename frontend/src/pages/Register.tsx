@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ROLE_HOME } from '../constants/roles';
-import { AuthShell, Button, Input, Select } from '../components/ui';
+import { AuthShell, Button, Input, PasswordInput, Select } from '../components/ui';
 import PasswordChecklist from '../components/PasswordChecklist';
 import { errorMessage } from '../utils/errors';
 import { EMAIL_RE, passwordError } from '../utils/validation';
@@ -23,7 +22,7 @@ function ErrorBanner({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      className="mb-5 rounded-xl border border-danger/20 border-l-4 border-l-danger bg-danger-soft px-4 py-3 text-sm font-medium text-danger-text"
+      className="mb-5 rounded-xl border border-red-200 border-l-4 border-l-red-500 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
     >
       {message}
     </div>
@@ -40,7 +39,6 @@ export default function Register() {
     password: '',
     role: 'WORKER',
   });
-  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<RegisterErrors>({});
   const [serverError, setServerError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -104,7 +102,7 @@ export default function Register() {
       footer={
         <>
           Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-teal-700 hover:text-teal-900">
+          <Link to="/login" className="font-semibold text-[#155E63] hover:text-teal-700 transition-colors">
             Sign in
           </Link>
         </>
@@ -113,107 +111,81 @@ export default function Register() {
       {serverError && <ErrorBanner message={serverError} />}
 
       <form onSubmit={handleSubmit} noValidate>
-        <Input
-          id="name"
-          name="name"
-          type="text"
-          label="Full name"
-          placeholder="Jane Doe"
-          value={form.name}
-          onChange={(e) => handleChange('name', e.target.value)}
-          onBlur={(e) => {
-            const value = e.target.value.trim();
-            if (value && value.length < 2) {
-              setErrors((prev) => ({ ...prev, name: 'Name must be at least 2 characters.' }));
-            }
-          }}
-          error={errors.name}
-          autoComplete="name"
-          autoFocus
-          className="mb-4"
-        />
+        <div className="mb-4">
+          <Input
+            id="name"
+            name="name"
+            type="text"
+            label="Full name"
+            placeholder="Jane Doe"
+            value={form.name}
+            onChange={(e) => handleChange('name', e.target.value)}
+            onBlur={(e) => {
+              const value = e.target.value.trim();
+              if (value && value.length < 2) {
+                setErrors((prev) => ({ ...prev, name: 'Name must be at least 2 characters.' }));
+              }
+            }}
+            error={errors.name}
+            autoComplete="name"
+            autoFocus
+          />
+        </div>
 
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          label="Email address"
-          placeholder="you@example.com"
-          value={form.email}
-          onChange={(e) => handleChange('email', e.target.value)}
-          onBlur={(e) => {
-            const value = e.target.value.trim();
-            if (value && !EMAIL_RE.test(value)) {
-              setErrors((prev) => ({ ...prev, email: 'Enter a valid email address.' }));
-            }
-          }}
-          error={errors.email}
-          autoComplete="email"
-          className="mb-4"
-        />
+        <div className="mb-4">
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            label="Email address"
+            placeholder="you@example.com"
+            value={form.email}
+            onChange={(e) => handleChange('email', e.target.value)}
+            onBlur={(e) => {
+              const value = e.target.value.trim();
+              if (value && !EMAIL_RE.test(value)) {
+                setErrors((prev) => ({ ...prev, email: 'Enter a valid email address.' }));
+              }
+            }}
+            error={errors.email}
+            autoComplete="email"
+          />
+        </div>
 
         <div className="mb-4">
           <label htmlFor="password" className="mb-1.5 block text-sm font-semibold text-ink">
             Password
           </label>
-          <div className="relative">
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              className={[
-                'w-full rounded-xl border bg-white px-3.5 py-2.5 pr-11 text-sm text-ink',
-                'placeholder:text-ink-soft/60',
-                'focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25',
-                errors.password ? 'border-danger' : 'border-line hover:border-ink-soft/40',
-              ].join(' ')}
-              placeholder="8–10 characters with A–Z, a–z, 0–9, special"
-              value={form.password}
-              onChange={(e) => handleChange('password', e.target.value)}
-              onBlur={(e) => {
-                if (e.target.value) {
-                  const err = passwordError(e.target.value);
-                  if (err) setErrors((prev) => ({ ...prev, password: err }));
-                }
-              }}
-              aria-invalid={errors.password ? true : undefined}
-              autoComplete="new-password"
-            />
-            <button
-              type="button"
-              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-line/60 hover:text-ink"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              aria-pressed={showPassword}
-            >
-              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-            </button>
-          </div>
-          {errors.password && (
-            <p role="alert" className="mt-1.5 text-xs font-medium text-danger-text">
-              {errors.password}
-            </p>
-          )}
+          <PasswordInput
+            id="password"
+            name="password"
+            placeholder="8–10 characters with A–Z, a–z, 0–9, special"
+            value={form.password}
+            onChange={(e) => handleChange('password', e.target.value)}
+            error={errors.password}
+            autoComplete="new-password"
+          />
           <PasswordChecklist value={form.password} />
         </div>
 
-        <Select
-          id="role"
-          name="role"
-          label="I am a…"
-          value={form.role}
-          onChange={(e) => handleChange('role', e.target.value)}
-          error={errors.role}
-          className="mb-6"
-        >
-          {REGISTRATION_ROLES.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </Select>
+        <div className="mb-6">
+          <Select
+            id="role"
+            name="role"
+            label="I am a…"
+            value={form.role}
+            onChange={(e) => handleChange('role', e.target.value)}
+            error={errors.role}
+          >
+            {REGISTRATION_ROLES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </Select>
+        </div>
 
-        <Button type="submit" className="w-full" isLoading={submitting}>
+        <Button type="submit" className="w-full h-12 rounded-2xl text-[15px]" isLoading={submitting}>
           {submitting ? 'Creating account…' : 'Create account'}
         </Button>
       </form>

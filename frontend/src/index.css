@@ -430,6 +430,31 @@ nav .navbar-profile-chip:hover {
   background: rgba(255, 255, 255, 0.12);
 }
 
+/* --- Premium input focus glow --- */
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 3px rgba(21, 94, 99, 0.1);
+}
+
+/* Ensure cards use the premium borderless surface */
+.card {
+  border: none !important;
+}
+
+/* Premium button lift on primary actions */
+.btn-primary:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 8px 20px rgba(21, 94, 99, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Remove the thick focus-visible outline, use subtle teal ring instead */
+:focus-visible {
+  outline: 2px solid rgba(21, 94, 99, 0.4);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 /* ---------------------------------------------------------------------------
  * Typography — Fraunces (serif display) for headings, Jakarta Sans body.
  * :where() keeps specificity at zero so utility colours (e.g. text-white on
@@ -632,31 +657,31 @@ body {
  * Cards, forms, tables, badges, misc
  * ------------------------------------------------------------------------- */
 .card {
-  --bs-card-border-radius: 1.1rem;
-  --bs-card-border-color: var(--dc-border);
+  --bs-card-border-radius: 1.25rem;
+  --bs-card-border-color: transparent;
   --bs-card-spacer-y: 1.25rem;
   --bs-card-spacer-x: 1.25rem;
-  border: 1px solid var(--dc-border);
-  box-shadow: var(--dc-shadow-card);
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
 .card-header {
-  border-bottom-color: var(--dc-border);
-  background: linear-gradient(180deg, rgba(15, 82, 87, 0.03), rgba(15, 82, 87, 0));
+  border-bottom: none;
+  background: transparent;
 }
 
 .form-control,
 .form-select {
-  border-color: #d5dcd2;
-  padding-block: 0.55rem;
-  border-radius: 0.65rem;
-  transition: border-color 0.15s ease, box-shadow 0.2s var(--dc-ease-premium);
+  border-color: rgba(0, 0, 0, 0.08);
+  padding-block: 0.75rem;
+  border-radius: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-control:focus,
 .form-select:focus {
-  border-color: var(--dc-teal-500);
-  box-shadow: 0 0 0 0.2rem rgba(15, 82, 87, 0.14);
+  border-color: #1b7a80;
+  box-shadow: 0 0 0 3px rgba(27, 122, 128, 0.1);
 }
 
 .form-label {
@@ -669,7 +694,7 @@ body {
 }
 
 .table > :not(caption) > * > * {
-  border-bottom-color: var(--dc-border);
+  border-bottom-color: rgba(0, 0, 0, 0.05);
 }
 
 .table thead th {
@@ -678,6 +703,7 @@ body {
   text-transform: uppercase;
   color: var(--dc-ink-mute);
   font-weight: 700;
+  border-bottom: none;
 }
 
 .table-light {
@@ -691,10 +717,10 @@ body {
 }
 
 .modal-content {
-  --bs-modal-border-radius: 1.1rem;
-  --bs-modal-border-color: var(--dc-border);
-  box-shadow: var(--dc-shadow-hover);
-  border: 1px solid var(--dc-border);
+  --bs-modal-border-radius: 1.25rem;
+  --bs-modal-border-color: transparent;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none;
 }
 
 .modal-backdrop.show {
@@ -703,14 +729,14 @@ body {
 }
 
 .toast {
-  --bs-toast-border-radius: 0.8rem;
-  border: 1px solid var(--dc-border);
-  box-shadow: var(--dc-shadow-hover);
+  --bs-toast-border-radius: 1rem;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .alert {
-  border-radius: 0.8rem;
-  border-width: 1px;
+  border-radius: 0.875rem;
+  border: none;
 }
 
 /* Auth pages — brand block (the Logo mark sits inside the heading) */
@@ -1060,6 +1086,21 @@ body {
   animation: toast-in 0.3s var(--dc-ease-premium);
 }
 
+/* Eye-toggle icon: subtle scale + fade when toggling password visibility. */
+@keyframes eyeToggle {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.eye-toggle-enter {
+  animation: eyeToggle 0.25s ease-out;
+}
+
 /* Job card hover-lift + 3-line clamped description (JobBrowse). */
 .job-card {
   transition: transform 0.15s var(--dc-ease-premium), box-shadow 0.2s var(--dc-ease-premium);
@@ -1094,5 +1135,8 @@ body {
   }
   .toast-enter {
     animation: none;
+  }
+  .eye-toggle-enter {
+    animation: none !important;
   }
 }
