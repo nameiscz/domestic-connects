@@ -110,7 +110,7 @@ export default function AdminAttendance() {
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-6">
-              <label htmlFor="attendance-worker" className="form-label">
+              <label htmlFor="attendance-worker" className="mb-1.5 block text-sm font-semibold text-ink">
                 Worker
               </label>
               {workersLoading ? (
@@ -133,7 +133,7 @@ export default function AdminAttendance() {
               ) : (
                 <select
                   id="attendance-worker"
-                  className="form-select"
+                  className="w-full appearance-none rounded-[14px] border border-black/[0.08] bg-white px-4 py-3.5 text-[15px] text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
                   value={selectedWorkerId}
                   onChange={(e) => setSelectedWorkerId(e.target.value)}
                 >
@@ -147,12 +147,12 @@ export default function AdminAttendance() {
               )}
             </div>
             <div className="col-6 col-md-3">
-              <label htmlFor="attendance-month" className="form-label">
+              <label htmlFor="attendance-month" className="mb-1.5 block text-sm font-semibold text-ink">
                 Month
               </label>
               <select
                 id="attendance-month"
-                className="form-select"
+                className="w-full appearance-none rounded-[14px] border border-black/[0.08] bg-white px-4 py-3.5 text-[15px] text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
                 value={month}
                 onChange={(e) => setMonth(Number(e.target.value))}
               >
@@ -164,12 +164,12 @@ export default function AdminAttendance() {
               </select>
             </div>
             <div className="col-6 col-md-3">
-              <label htmlFor="attendance-year" className="form-label">
+              <label htmlFor="attendance-year" className="mb-1.5 block text-sm font-semibold text-ink">
                 Year
               </label>
               <select
                 id="attendance-year"
-                className="form-select"
+                className="w-full appearance-none rounded-[14px] border border-black/[0.08] bg-white px-4 py-3.5 text-[15px] text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
                 value={year}
                 onChange={(e) => setYear(Number(e.target.value))}
               >

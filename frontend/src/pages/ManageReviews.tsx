@@ -302,7 +302,7 @@ export default function ManageReviews() {
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-6">
-              <label htmlFor="reviews-worker" className="form-label">
+              <label htmlFor="reviews-worker" className="mb-1.5 block text-sm font-semibold text-ink">
                 Worker
               </label>
               {workersLoading || (isEmployer && jobsLoading) ? (
@@ -333,7 +333,7 @@ export default function ManageReviews() {
               ) : (
                 <select
                   id="reviews-worker"
-                  className="form-select"
+                  className="w-full appearance-none rounded-[14px] border border-black/[0.08] bg-white px-4 py-3.5 text-[15px] text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
                   value={selectedWorkerId}
                   onChange={(e) => setSelectedWorkerId(e.target.value)}
                 >
@@ -520,7 +520,7 @@ export default function ManageReviews() {
               </p>
 
               <div className="mb-3">
-                <span className="form-label d-block">Rating</span>
+                <span className="mb-1.5 block text-sm font-semibold text-ink">Rating</span>
                 <StarRating value={editRating} onChange={setEditRating} />
                 {editErrors.rating && (
                   <div className="invalid-feedback d-block">{editErrors.rating}</div>
@@ -529,7 +529,7 @@ export default function ManageReviews() {
 
               <div className="mb-2">
                 <div className="d-flex justify-content-between align-items-baseline">
-                  <label htmlFor="edit-review-remarks" className="form-label">
+                  <label htmlFor="edit-review-remarks" className="mb-1.5 block text-sm font-semibold text-ink">
                     Remarks
                   </label>
                   <span className="text-muted small">
@@ -540,7 +540,7 @@ export default function ManageReviews() {
                   id="edit-review-remarks"
                   rows={4}
                   maxLength={REMARKS_MAX}
-                  className={`form-control ${editErrors.remarks ? 'is-invalid' : ''}`}
+                  className={`w-full rounded-[14px] border bg-white px-4 py-3.5 text-[15px] text-ink placeholder:text-ink-soft/50 transition-all duration-200 focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)] ${editErrors.remarks ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-black/[0.08] hover:border-black/[0.15]'}`}
                   value={editRemarks}
                   onChange={(e) => {
                     setEditRemarks(e.target.value);

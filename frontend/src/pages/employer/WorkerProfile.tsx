@@ -233,7 +233,7 @@ export default function WorkerProfile() {
                   ) : (
                     <div className="d-flex flex-wrap gap-2 align-items-center">
                       <select
-                        className="form-select form-select-sm"
+                        className="appearance-none rounded-[10px] border border-black/[0.08] bg-white px-3 py-1.5 text-sm text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
                         style={{ maxWidth: 260 }}
                         value={selectedJobId}
                         onChange={(e) => setSelectedJobId(e.target.value)}

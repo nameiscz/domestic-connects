@@ -265,12 +265,12 @@ export default function AuditLogs() {
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-3">
-              <label htmlFor="audit-service" className="form-label">
+              <label htmlFor="audit-service" className="mb-1.5 block text-sm font-semibold text-ink">
                 Service
               </label>
               <select
                 id="audit-service"
-                className="form-select"
+                className="w-full appearance-none rounded-[14px] border border-black/[0.08] bg-white px-4 py-3.5 text-[15px] text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
                 value={draft.service}
                 onChange={updateDraft('service')}
               >
@@ -283,39 +283,39 @@ export default function AuditLogs() {
               </select>
             </div>
             <div className="col-md-3">
-              <label htmlFor="audit-entity-type" className="form-label">
+              <label htmlFor="audit-entity-type" className="mb-1.5 block text-sm font-semibold text-ink">
                 Entity type
               </label>
               <input
                 id="audit-entity-type"
                 type="text"
-                className="form-control"
+                className="w-full rounded-[14px] border border-black/[0.08] bg-white px-4 py-3.5 text-[15px] text-ink placeholder:text-ink-soft/50 transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
                 placeholder="e.g. USER, JOB, PAYROLL"
                 value={draft.entityType}
                 onChange={updateDraft('entityType')}
               />
             </div>
             <div className="col-md-3">
-              <label htmlFor="audit-start-date" className="form-label">
+              <label htmlFor="audit-start-date" className="mb-1.5 block text-sm font-semibold text-ink">
                 From date
               </label>
               <input
                 id="audit-start-date"
                 type="date"
-                className="form-control"
+                className="w-full rounded-[14px] border border-black/[0.08] bg-white px-4 py-3.5 text-[15px] text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
                 value={draft.startDate}
                 max={draft.endDate || undefined}
                 onChange={updateDraft('startDate')}
               />
             </div>
             <div className="col-md-3">
-              <label htmlFor="audit-end-date" className="form-label">
+              <label htmlFor="audit-end-date" className="mb-1.5 block text-sm font-semibold text-ink">
                 To date
               </label>
               <input
                 id="audit-end-date"
                 type="date"
-                className="form-control"
+                className="w-full rounded-[14px] border border-black/[0.08] bg-white px-4 py-3.5 text-[15px] text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
                 value={draft.endDate}
                 min={draft.startDate || undefined}
                 onChange={updateDraft('endDate')}

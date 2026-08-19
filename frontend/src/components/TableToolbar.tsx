@@ -35,13 +35,13 @@ export default function TableToolbar({
 
   return (
     <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-      <div className="input-group input-group-sm" style={{ maxWidth: 300 }}>
-        <span className="input-group-text" aria-hidden="true">
+      <div className="relative" style={{ maxWidth: 300 }}>
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" aria-hidden="true">
           <Search size={15} strokeWidth={2.4} />
         </span>
         <input
           type="search"
-          className="form-control"
+          className="w-full rounded-[14px] border border-black/[0.08] bg-white py-2 pl-9 pr-4 text-sm text-ink placeholder:text-ink-soft/50 transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
           placeholder={searchPlaceholder}
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
@@ -55,7 +55,7 @@ export default function TableToolbar({
         </span>
 
         <select
-          className="form-select form-select-sm"
+          className="appearance-none rounded-[10px] border border-black/[0.08] bg-white px-3 py-1.5 text-sm text-ink transition-all duration-200 hover:border-black/[0.15] focus:border-teal-500 focus:outline-none focus:ring-[3px] focus:ring-teal-500/15 focus:shadow-[0_0_0_3px_rgba(21,94,99,0.1)]"
           style={{ width: 'auto' }}
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
