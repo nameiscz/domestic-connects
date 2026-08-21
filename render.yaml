@@ -1,0 +1,81 @@
+# Domestic Connects — Render deployment blueprint
+#
+# WARNING: This is a complex microservices architecture. Free tier on Render
+# has significant limitations:
+#   - Each service spins down after 15 min of inactivity (cold starts ~30-60s)
+#   - Only 750 hours/month across all services
+#   - No Kafka support (use CloudKarafka free tier or Redpanda Cloud)
+#   - MySQL on free tier spins down after inactivity
+#
+# RECOMMENDATION: For this architecture, consider:
+#   1. Render paid tier ($7/service/month) or Railway ($5/month)
+#   2. Use Docker Compose on a single VPS (Hetzner, DigitalOcean)
+#   3. Simplify to a monolith for free tier deployment
+#
+# This blueprint shows the structure for reference purposes.
+
+services:
+  # Infrastructure Services
+  - type: web
+    name: eureka-server
+    env: java
+    plan: free
+    buildCommand: mvn clean package -pl eureka-server -am -DskipTests
+    startCommand: java -jar eureka-server/target/*.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+  - type: web
+    name: config-server
+    env: java
+    plan: free
+    buildCommand: mvn clean package -pl config-server -am -DskipTests
+    startCommand: java -jar config-server/target/*.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://eureka-server.onrender.com/eureka/
+      - key: SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS
+        value: file:/app/config-repo
+
+  # API Gateway
+  - type: web
+    name: api-gateway
+    env: java
+    plan: free
+    buildCommand: mvn clean package -pl api-gateway -am -DskipTests
+    startCommand: java -jar api-gateway/target/*.jar
+    envVars:
+      - key: SPRING_CLOUD_CONFIG_URI
+        value: https://config-server.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://eureka-server.onrender.com/eureka/
+
+  # Microservices (each needs its own service)
+  - type: web
+    name: auth-service
+    env: java
+    plan: free
+    buildCommand: mvn clean package -pl auth-service -am -DskipTests
+    startCommand: java -jar auth-service/target/*.jar
+    envVars:
+      - key: SPRING_CLOUD_CONFIG_URI
+        value: https://config-server.onrender.com
+      - key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        value: https://eureka-server.onrender.com/eureka/
+      - key: SPRING_DATASOURCE_URL
+        value: https://your-mysql-host:3306/auth_db
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+
+  # ... (similar entries for job-service, attendance-service, etc.)
+
+databases:
+  - name: domestic-connects-mysql
+    plan: free
+    databaseName: domestic_connects
+    user: domestic_user
