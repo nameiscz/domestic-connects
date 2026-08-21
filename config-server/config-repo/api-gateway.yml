@@ -68,13 +68,15 @@ spring:
             - StripPrefix=1
 
       # ------------------------------------------------------------------
-      # Global CORS configuration for React frontend on localhost:3000
+      # Global CORS configuration for React frontend
       # ------------------------------------------------------------------
       globalcors:
         cors-configurations:
           '[/**]':
-            allowed-origins:
+            allowed-origin-patterns:
               - "http://localhost:3000"
+              - "https://domestic-connects-frontend.vercel.app"
+              - "https://*.vercel.app"
             allowed-methods:
               - GET
               - POST
